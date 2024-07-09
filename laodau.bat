@@ -22,23 +22,24 @@ set "tempDir=%TEMP%\r-setup"
 :loading
 set "message=%~1"
 set "progress=0"
+set "barLength=50"
 cls
 echo ==============================================================================
 echo =                        Auto Installation by Laodau                         =
 echo ==============================================================================
 echo.
-echo %message% [0%%]
-echo.
-echo [Working] 
-<nul set /p = 
+<nul set /p ="%message% [                                                  ]"
+<nul set /p ="0%%]"
+<nul set /p ="Working"
+<nul set /p =" [.0%%]"
+
 :progress
-set /a "progress=progress+4"
+set /a "progress=progress+2"
 if %progress% lss 100 (
-    echo %message% [%progress%%%]
+    <nul set /p ="." 
     ping -n 2 127.0.0.1 >nul
     goto :progress
 ) else (
-    echo %message% [100%%]
     echo.
 )
 
@@ -127,9 +128,24 @@ exit /b
 
 :loading
 set "message=%~1"
+set "progress=0"
+set "barLength=50"
 cls
 echo ==============================================================================
 echo =                        Auto Installation by Laodau                         =
 echo ==============================================================================
 echo.
-echo %message%
+<nul set /p ="%message% [                                                  ]"
+<nul set /p ="0%%]"
+<nul set /p ="Working"
+<nul set /p =" [.0%%]"
+
+:progress
+set /a "progress=progress+2"
+if %progress% lss 100 (
+    <nul set /p ="." 
+    ping -n 2 127.0.0.1 >nul
+    goto :progress
+) else (
+    echo.
+)
