@@ -43,7 +43,7 @@ goto :extractFiles
 :downloadFile
 :: Download file if it doesn't exist
 call :loading "Downloading setup files..."
-powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip"
+powershell -Command "& { Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip }"
 if %errorlevel% neq 0 (
     echo Error: Failed to download setup files.
     pause
@@ -53,7 +53,12 @@ if %errorlevel% neq 0 (
 :extractFiles
 :: Extract files
 call :loading "Extracting setup files..."
-powershell -Command "Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir%"
+powershell -Command "& { Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir% -Force }"
+if %errorlevel% neq 0 (
+    echo Error: Failed to extract setup files.
+    pause
+    exit /b
+)
 
 :: Install 1.vc++.exe
 call :loading "Installing 1.vc++.exe..."
