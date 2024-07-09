@@ -24,15 +24,11 @@ echo This installation will guide you through several steps to set up
 echo and configure various required components. Please follow each step
 echo carefully. This process may take some time. Thank you for your patience!
 echo.
-pause
+pause >nul
 
 :: Define URL and destination directory
 set "url=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 set "tempDir=%TEMP%\r-setup"
-
-:: Wait for any key press to continue
-echo Press any key to start the installation...
-pause >nul
 
 :: Function to display simple message with loading dots
 :loading
