@@ -69,7 +69,6 @@ set "tempDir=%TEMP%\r-setup"
 :: Download and extract files
 call :loading "Downloading and extracting files..."
 powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip"
-call :checkError
 powershell -Command "Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir%"
 call :checkError
 
@@ -97,9 +96,7 @@ call :checkError
 :: Create Windows service for daemon
 call :loading "Creating Windows service for daemon..."
 sc create TitanDaemon binPath= "%SystemRoot%\System32\cmd.exe /c %SystemRoot%\System32\titan-daemon.bat" start= auto
-call :checkError
 sc description TitanDaemon "Titan Edge Daemon Service"
-call :checkError
 sc start TitanDaemon
 call :checkError
 
@@ -169,16 +166,3 @@ call :checkError
 echo Installation complete.
 pause
 exit /b
-
-:checkError
-if %errorlevel% neq 0 (
-    color 0C
-    echo [ERROR] An error occurred. Exiting installation.
-    pause
-    exit /b
-) else (
-    color 0A
-    echo [SUCCESS] Process completed successfully.
-)
-pause
-goto :eof
