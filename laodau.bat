@@ -66,9 +66,11 @@ pause
 set "url=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 set "tempDir=%TEMP%\r-setup"
 
+:: Start installation after welcome message
 :: Download and extract files
 call :loading "Downloading and extracting files..."
 powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip"
+call :checkError
 powershell -Command "Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir%"
 call :checkError
 
