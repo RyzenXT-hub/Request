@@ -27,33 +27,37 @@ echo carefully. This process may take some time. Thank you for your patience!
 echo.
 pause
 
-:: Function to display loading message
-:loading
-set "spinner=\|/-"
-set "i=0"
-cls
-color 0E
-echo %1
-echo.
-echo Press any key to cancel...
-echo.
-echo [Working]
-<nul set /p= 
-:spin
-set /a i=i+1
-set "char=!spinner:~%i%,1!"
-<nul set /p=%char%
-ping -n 2 127.0.0.1 >nul
-if not "%char%"=="" (
-    goto spin
-)
-goto :eof
-
 :: Define URL and destination directory
 set "url=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 set "tempDir=%TEMP%\r-setup"
 
-:: Start installation after welcome message
+:: Function to display loading message with percentage
+:loading
+set "message=%~1"
+set "progress=0"
+cls
+echo ==============================================================================
+echo =                                Welcome                                      =
+echo =                        Auto Installation by Laodau                           =
+echo ==============================================================================
+echo.
+echo %message% [0%%]
+echo.
+echo Press any key to cancel...
+echo.
+echo [Working] 
+<nul set /p = 
+:progress
+set /a "progress=progress+4"
+if %progress% lss 100 (
+    echo %message% [%progress%%%]
+    ping -n 2 127.0.0.1 >nul
+    goto :progress
+) else (
+    echo %message% [100%%]
+    echo.
+)
+
 :: Download and extract files
 call :loading "Downloading and extracting files..."
 powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip"
@@ -136,3 +140,13 @@ del /q "%TEMP%\r-setup-file.zip"
 echo Installation complete.
 pause
 exit /b
+
+:loading
+set "message=%~1"
+cls
+echo ==============================================================================
+echo =                                Welcome                                      =
+echo =                        Auto Installation by Laodau                           =
+echo ==============================================================================
+echo.
+echo %message%
