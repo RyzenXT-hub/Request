@@ -10,16 +10,19 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: Script continues here with administrator privileges
+:: Set color for Batch script (black background with light aqua text)
+color 0B
 setlocal EnableDelayedExpansion
 
 :: Function to check the last command's exit code and handle error or success
 :checkError
 if %errorlevel% neq 0 (
+    color 0C
     echo [ERROR] An error occurred. Exiting installation.
     pause
     exit /b
 ) else (
+    color 0A
     echo [SUCCESS] Process completed successfully.
 )
 pause
@@ -30,6 +33,7 @@ goto :eof
 set "spinner=\|/-"
 set "i=0"
 cls
+color 0E
 echo %1
 echo.
 echo Press any key to cancel...
