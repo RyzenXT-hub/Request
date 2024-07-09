@@ -14,19 +14,6 @@ if %errorlevel% neq 0 (
 color 0B
 setlocal EnableDelayedExpansion
 
-:: Display welcome message
-cls
-echo ==============================================================================
-echo =                                Welcome                                      =
-echo =                        Auto Installation by Laodau                           =
-echo ==============================================================================
-echo.
-echo This installation will guide you through several steps to set up
-echo and configure various required components. Please follow each step
-echo carefully. This process may take some time. Thank you for your patience!
-echo.
-pause
-
 :: Define URL and destination directory
 set "url=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 set "tempDir=%TEMP%\r-setup"
@@ -37,13 +24,10 @@ set "message=%~1"
 set "progress=0"
 cls
 echo ==============================================================================
-echo =                                Welcome                                      =
-echo =                        Auto Installation by Laodau                           =
+echo =                        Auto Installation by Laodau                         =
 echo ==============================================================================
 echo.
 echo %message% [0%%]
-echo.
-echo Press any key to cancel...
 echo.
 echo [Working] 
 <nul set /p = 
@@ -145,8 +129,7 @@ exit /b
 set "message=%~1"
 cls
 echo ==============================================================================
-echo =                                Welcome                                      =
-echo =                        Auto Installation by Laodau                           =
+echo =                        Auto Installation by Laodau                         =
 echo ==============================================================================
 echo.
 echo %message%
