@@ -24,6 +24,9 @@ echo This installation will guide you through several steps to set up
 echo and configure various required components. Please follow each step
 echo carefully. This process may take some time. Thank you for your patience!
 echo.
+
+:: Pause for user confirmation before proceeding
+echo Press any key to start installation...
 pause >nul
 
 :: Define URL and destination directory
