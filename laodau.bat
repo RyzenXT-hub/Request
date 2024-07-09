@@ -75,9 +75,6 @@ call :installAndWait "%tempDir%\4.rivalz\rClient.Setup.latest.exe" "Installing r
 
 :: Clean up temporary files
 call :cleanup "%tempDir%" "Cleaning up temporary files..."
-
-echo Installation complete.
-pause
 exit /b
 
 :: Subroutine to download and extract files
