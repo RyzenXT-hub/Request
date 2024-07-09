@@ -1,12 +1,17 @@
 @echo off
-setlocal EnableDelayedExpansion
-
-:: Check if the script is running as administrator
-openfiles >nul 2>&1 || (
-    echo This script must be run as administrator.
-    pause
+:: Check if script is running with administrator privileges
+net session >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Requesting administrative privileges...
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\AdminPriv.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\AdminPriv.vbs"
+    "%temp%\AdminPriv.vbs"
+    del "%temp%\AdminPriv.vbs"
     exit /b
 )
+
+:: Script continues here with administrator privileges
+setlocal EnableDelayedExpansion
 
 :: Function to check the last command's exit code and handle error or success
 :checkError
