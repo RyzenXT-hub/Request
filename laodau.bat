@@ -70,39 +70,39 @@ set "tempDir=%TEMP%\r-setup"
 :: Download and extract files
 call :loading "Downloading and extracting files..."
 powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 powershell -Command "Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir%"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Install 1.vc++.exe
 call :loading "Installing 1.vc++.exe..."
 start /wait "" "%tempDir%\1.vc++.exe"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Install 2.win-runtime.exe
 call :loading "Installing 2.win-runtime.exe..."
 start /wait "" "%tempDir%\2.win-runtime.exe"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Copy files from folder 5.titan to Windows system32
 call :loading "Copying files to system32..."
 xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Create batch file for daemon
 call :loading "Creating batch file for daemon..."
 echo @echo off > "%SystemRoot%\System32\titan-daemon.bat"
 echo titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0 >> "%SystemRoot%\System32\titan-daemon.bat"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Create Windows service for daemon
 call :loading "Creating Windows service for daemon..."
 sc create TitanDaemon binPath= "%SystemRoot%\System32\cmd.exe /c %SystemRoot%\System32\titan-daemon.bat" start= auto
-call :checkError
+if %errorlevel% neq 0 goto checkError
 sc description TitanDaemon "Titan Edge Daemon Service"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 sc start TitanDaemon
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Create process check script
 call :loading "Creating process check script..."
@@ -117,12 +117,12 @@ echo     sc start TitanDaemon >> "%SystemRoot%\System32\check-titan-daemon.bat"
 echo     timeout /t 10 /nobreak >> "%SystemRoot%\System32\check-titan-daemon.bat"
 echo     goto check >> "%SystemRoot%\System32\check-titan-daemon.bat"
 echo ) >> "%SystemRoot%\System32\check-titan-daemon.bat"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Run process check script
 call :loading "Starting process check script..."
 start cmd /k "%SystemRoot%\System32\check-titan-daemon.bat"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Prompt user for identity code
 set "identityCode="
@@ -130,7 +130,7 @@ set "identityCode="
 set /p "identityCode=Enter identity code: "
 if "%identityCode%"=="" goto inputIdentityCode
 start cmd /k "titan-edge bind --hash=%identityCode% https://api-test1.container1.titannet.io/api/v2/device/binding"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Prompt user for storage size
 set "storageSize="
@@ -139,33 +139,40 @@ set /p "storageSize=Enter storage size (GB): "
 if not "%storageSize%" gtr 0 goto inputStorageSize
 if not "%storageSize%" lss 500 goto inputStorageSize
 start cmd /k "titan-edge config set --storage-size=%storageSize%GB && exit"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Run state command
 call :loading "Running state command..."
 start cmd /k "titan-edge state"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Run start-click-here.exe
 call :loading "Running start-click-here.exe..."
 start /wait "" "%tempDir%\3.tool-change-info\start-click-here.exe"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Run Activate AIO Tools v3.1.2 by Savio.cmd
 call :loading "Running Activate AIO Tools v3.1.2 by Savio.cmd..."
 start /wait "" "%tempDir%\6.actived-win\Activate AIO Tools v3.1.2\Activate AIO Tools v3.1.2 by Savio.cmd"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Install rClient.Setup.latest.exe
 call :loading "Installing rClient.Setup.latest.exe..."
 start /wait "" "%tempDir%\4.rivalz\rClient.Setup.latest.exe"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 :: Clean up temporary files
 call :loading "Cleaning up temporary files..."
 rd /s /q "%tempDir%"
 del /q "%TEMP%\r-setup-file.zip"
-call :checkError
+if %errorlevel% neq 0 goto checkError
 
 echo Installation complete.
 pause
+exit /b
+
+:checkError
+color 0C
+echo [ERROR] An error occurred. Exiting installation.
+pause
+exit /b
