@@ -135,10 +135,10 @@ echo ===========================================================================
 echo =                        Auto Installation by Laodau                         =
 echo ==============================================================================
 echo.
-<nul set /p ="%message% [                                                  ]"
-<nul set /p ="0%%]"
-<nul set /p ="Working"
-<nul set /p =" [.0%%]"
+<nul set /p ="%message% ["
+<nul set /p ="0%%] "
+<nul set /p ="Working "
+<nul set /p ="[.0%%] "
 
 :progress
 set /a "progress=progress+2"
