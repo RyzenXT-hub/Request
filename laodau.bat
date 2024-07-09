@@ -10,8 +10,8 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: Set color for Batch script
-color B0
+:: Set color for Batch script (black background with white text)
+color 0F
 setlocal EnableDelayedExpansion
 
 :: Function to check the last command's exit code and handle error or success
