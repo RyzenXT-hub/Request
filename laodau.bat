@@ -14,17 +14,17 @@ if %errorlevel% neq 0 (
 color 0B
 setlocal EnableDelayedExpansion
 
-:: Function to check the last command's exit code and handle error or success
-:checkError
-if %errorlevel% neq 0 (
-    color 0C
-    echo [ERROR] An error occurred. Exiting installation.
-    pause
-    exit /b
-) else (
-    color 0A
-    echo [SUCCESS] Process completed successfully.
-)
+:: Display welcome message
+cls
+echo ==============================================================================
+echo =                                Welcome                                      =
+echo =                        Auto Installation by Laodau                           =
+echo ==============================================================================
+echo.
+echo This installation will guide you through several steps to set up
+echo and configure various required components. Please follow each step
+echo carefully. This process may take some time. Thank you for your patience!
+echo.
 pause
 
 :: Function to display loading message
@@ -49,17 +49,17 @@ if not "%char%"=="" (
 )
 goto :eof
 
-:: Display welcome message
-cls
-echo ==============================================================================
-echo =                                Welcome                                      =
-echo =                        Auto Installation by Laodau                           =
-echo ==============================================================================
-echo.
-echo This installation will guide you through several steps to set up
-echo and configure various required components. Please follow each step
-echo carefully. This process may take some time. Thank you for your patience!
-echo.
+:: Function to check the last command's exit code and handle error or success
+:checkError
+if %errorlevel% neq 0 (
+    color 0C
+    echo [ERROR] An error occurred. Exiting installation.
+    pause
+    exit /b
+) else (
+    color 0A
+    echo [SUCCESS] Process completed successfully.
+)
 pause
 
 :: Define URL and destination directory
@@ -171,7 +171,14 @@ pause
 exit /b
 
 :checkError
-color 0C
-echo [ERROR] An error occurred. Exiting installation.
+if %errorlevel% neq 0 (
+    color 0C
+    echo [ERROR] An error occurred. Exiting installation.
+    pause
+    exit /b
+) else (
+    color 0A
+    echo [SUCCESS] Process completed successfully.
+)
 pause
-exit /b
+goto :eof
