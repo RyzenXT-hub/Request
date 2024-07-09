@@ -10,20 +10,17 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: Set color for Batch script (black background with white text)
-color 0F
+:: Script continues here with administrator privileges
 setlocal EnableDelayedExpansion
 
 :: Function to check the last command's exit code and handle error or success
 :checkError
 if %errorlevel% neq 0 (
     echo [ERROR] An error occurred. Exiting installation.
-    color C4
     pause
     exit /b
 ) else (
     echo [SUCCESS] Process completed successfully.
-    color A2
 )
 pause
 goto :eof
