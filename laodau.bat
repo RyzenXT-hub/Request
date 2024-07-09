@@ -24,8 +24,8 @@ if %errorlevel% neq 0 (
 ) else (
     color 0A
     echo [SUCCESS] Process completed successfully.
+    pause
 )
-pause
 goto :eof
 
 :: Function to display loading message
@@ -38,19 +38,20 @@ echo %1
 echo.
 echo Press any key to cancel...
 echo.
-echo [Working] 
-<nul set /p = 
+echo [Working]
+<nul set /p= 
 :spin
 set /a i=i+1
 set "char=!spinner:~%i%,1!"
-<nul set /p= %char%
+<nul set /p=%char%
 ping -n 2 127.0.0.1 >nul
 if not "%char%"=="" (
-    goto :spin
+    goto spin
 )
 goto :eof
 
 :: Display welcome message
+cls
 echo ==============================================================================
 echo =                                Welcome                                      =
 echo =                        Auto Installation by Laodau                           =
