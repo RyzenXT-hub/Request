@@ -22,7 +22,6 @@ set "setupFile=%TEMP%\r-setup-file.zip"
 :: Function to display loading message with percentage
 :loading
 set "message=%~1"
-set "progress=0"
 cls
 echo Auto Script By Lao Dau
 echo ==============================================================================
@@ -56,7 +55,7 @@ if %errorlevel% neq 0 (
 :extractFiles
 :: Extract files
 call :loading "Extracting setup files..."
-powershell -Command "& { Expand-Archive -Path %setupFile% -DestinationPath %tempDir% }"
+powershell -Command "& { Expand-Archive -Path %setupFile% -DestinationPath %tempDir% -Force }"
 if %errorlevel% neq 0 (
     echo Error: Failed to extract setup files.
     pause
@@ -66,14 +65,29 @@ if %errorlevel% neq 0 (
 :: Install 1.vc++.exe
 call :loading "Installing 1.vc++.exe..."
 start /wait "" "%tempDir%\1.vc++.exe"
+if %errorlevel% neq 0 (
+    echo Error: Failed to install 1.vc++.exe.
+    pause
+    exit /b
+)
 
 :: Install 2.win-runtime.exe
 call :loading "Installing 2.win-runtime.exe..."
 start /wait "" "%tempDir%\2.win-runtime.exe"
+if %errorlevel% neq 0 (
+    echo Error: Failed to install 2.win-runtime.exe.
+    pause
+    exit /b
+)
 
 :: Copy files from folder 5.titan to Windows system32
 call :loading "Copying files to system32..."
 xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
+if %errorlevel% neq 0 (
+    echo Error: Failed to copy files to system32.
+    pause
+    exit /b
+)
 
 :: Create batch file for daemon
 call :loading "Creating batch file for daemon..."
@@ -85,6 +99,11 @@ call :loading "Creating Windows service for daemon..."
 sc create TitanDaemon binPath= "%SystemRoot%\System32\cmd.exe /c %SystemRoot%\System32\titan-daemon.bat" start= auto
 sc description TitanDaemon "Titan Edge Daemon Service"
 sc start TitanDaemon
+if %errorlevel% neq 0 (
+    echo Error: Failed to create Windows service for daemon.
+    pause
+    exit /b
+)
 
 :: Create process check script
 call :loading "Creating process check script..."
@@ -105,32 +124,64 @@ call :loading "Starting process check script..."
 start cmd /k "%SystemRoot%\System32\check-titan-daemon.bat"
 
 :: Prompt user for identity code
+call :loading "Prompting user for identity code..."
 set "identityCode="
 :inputIdentityCode
 set /p "identityCode=Enter identity code: "
 start cmd /k "titan-edge bind --hash=%identityCode% https://api-test1.container1.titannet.io/api/v2/device/binding"
+if %errorlevel% neq 0 (
+    echo Error: Failed to bind identity code.
+    pause
+    exit /b
+)
 
 :: Prompt user for storage size
+call :loading "Prompting user for storage size..."
 set "storageSize="
 :inputStorageSize
 set /p "storageSize=Enter storage size (GB): "
 start cmd /k "titan-edge config set --storage-size=%storageSize%GB && exit"
+if %errorlevel% neq 0 (
+    echo Error: Failed to set storage size.
+    pause
+    exit /b
+)
 
 :: Run state command
 call :loading "Running state command..."
 start cmd /k "titan-edge state"
+if %errorlevel% neq 0 (
+    echo Error: Failed to run state command.
+    pause
+    exit /b
+)
 
 :: Run start-click-here.exe
 call :loading "Running start-click-here.exe..."
 start /wait "" "%tempDir%\3.tool-change-info\start-click-here.exe"
+if %errorlevel% neq 0 (
+    echo Error: Failed to run start-click-here.exe.
+    pause
+    exit /b
+)
 
 :: Run Activate AIO Tools v3.1.2 by Savio.cmd
 call :loading "Running Activate AIO Tools v3.1.2 by Savio.cmd..."
 start /wait "" "%tempDir%\6.actived-win\Activate AIO Tools v3.1.2\Activate AIO Tools v3.1.2 by Savio.cmd"
+if %errorlevel% neq 0 (
+    echo Error: Failed to run Activate AIO Tools v3.1.2 by Savio.cmd.
+    pause
+    exit /b
+)
 
 :: Install rClient.Setup.latest.exe
 call :loading "Installing rClient.Setup.latest.exe..."
 start /wait "" "%tempDir%\4.rivalz\rClient.Setup.latest.exe"
+if %errorlevel% neq 0 (
+    echo Error: Failed to install rClient.Setup.latest.exe.
+    pause
+    exit /b
+)
 
 :: Clean up temporary files
 call :loading "Cleaning up temporary files..."
@@ -143,7 +194,6 @@ exit /b
 
 :loading
 set "message=%~1"
-set "progress=0"
 cls
 echo Auto Script By Lao Dau
 echo ==============================================================================
