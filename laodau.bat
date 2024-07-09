@@ -30,6 +30,10 @@ pause
 set "url=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 set "tempDir=%TEMP%\r-setup"
 
+:: Wait for any key press to continue
+echo Press any key to start the installation...
+pause >nul
+
 :: Function to display simple message with loading dots
 :loading
 set "message=%~1"
