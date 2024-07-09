@@ -40,7 +40,8 @@ echo ===========================================================================
 echo.
 echo %message%...
 echo [Working]
-exit /b
+:: Remove exit /b command from here
+goto :eof
 
 :: Download and extract files
 call :loading "Downloading and extracting files"
