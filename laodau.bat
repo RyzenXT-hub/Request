@@ -23,6 +23,7 @@ set "tempDir=%TEMP%\r-setup"
 set "message=%~1"
 set "progress=0"
 cls
+echo Auto Script By Lao Dau
 echo ==============================================================================
 echo =                        Auto Installation by Laodau                         =
 echo ==============================================================================
@@ -30,20 +31,29 @@ echo.
 echo %message% [0%%]
 echo.
 
-:: Download and extract files
-call :loading "Downloading and extracting files..."
-powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip -Force"
+:: Check if the setup file already exists
+if exist "%TEMP%\r-setup-file.zip" (
+    echo Setup file already exists. Skipping download.
+) else (
+    call :downloadFile
+)
+
+goto :extractFiles
+
+:downloadFile
+:: Download file if it doesn't exist
+call :loading "Downloading setup files..."
+powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip"
 if %errorlevel% neq 0 (
     echo Error: Failed to download setup files.
     pause
     exit /b
 )
-powershell -Command "Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir% -Force"
-if %errorlevel% neq 0 (
-    echo Error: Failed to extract setup files.
-    pause
-    exit /b
-)
+
+:extractFiles
+:: Extract files
+call :loading "Extracting setup files..."
+powershell -Command "Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir%"
 
 :: Install 1.vc++.exe
 call :loading "Installing 1.vc++.exe..."
