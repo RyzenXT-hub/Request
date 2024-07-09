@@ -34,115 +34,6 @@ set "tempDir=%TEMP%\r-setup"
 :: Function to display loading message with percentage
 :loading
 set "message=%~1"
-set "progress=0"
-cls
-echo ==============================================================================
-echo =                                Welcome                                      =
-echo =                        Auto Installation by Laodau                           =
-echo ==============================================================================
-echo.
-echo %message% [0%%]
-echo.
-echo Press any key to cancel...
-echo.
-echo [Working] 
-<nul set /p = 
-:progress
-set /a "progress=progress+4"
-if %progress% lss 100 (
-    echo %message% [%progress%%%]
-    ping -n 2 127.0.0.1 >nul
-    goto :progress
-) else (
-    echo %message% [100%%]
-    echo.
-)
-
-:: Download and extract files
-call :loading "Downloading and extracting files..."
-powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip"
-powershell -Command "Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir%"
-
-:: Install 1.vc++.exe
-call :loading "Installing 1.vc++.exe..."
-start /wait "" "%tempDir%\1.vc++.exe"
-
-:: Install 2.win-runtime.exe
-call :loading "Installing 2.win-runtime.exe..."
-start /wait "" "%tempDir%\2.win-runtime.exe"
-
-:: Copy files from folder 5.titan to Windows system32
-call :loading "Copying files to system32..."
-xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
-
-:: Create batch file for daemon
-call :loading "Creating batch file for daemon..."
-echo @echo off > "%SystemRoot%\System32\titan-daemon.bat"
-echo titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0 >> "%SystemRoot%\System32\titan-daemon.bat"
-
-:: Create Windows service for daemon
-call :loading "Creating Windows service for daemon..."
-sc create TitanDaemon binPath= "%SystemRoot%\System32\cmd.exe /c %SystemRoot%\System32\titan-daemon.bat" start= auto
-sc description TitanDaemon "Titan Edge Daemon Service"
-sc start TitanDaemon
-
-:: Create process check script
-call :loading "Creating process check script..."
-echo @echo off > "%SystemRoot%\System32\check-titan-daemon.bat"
-echo :check >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo tasklist /FI "IMAGENAME eq titan-edge.exe" 2^>nul | find /I /N "titan-edge.exe" ^>nul >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo if "%ERRORLEVEL%"=="0" ( >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo     timeout /t 10 /nobreak >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo     goto check >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo ) else ( >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo     sc start TitanDaemon >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo     timeout /t 10 /nobreak >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo     goto check >> "%SystemRoot%\System32\check-titan-daemon.bat"
-echo ) >> "%SystemRoot%\System32\check-titan-daemon.bat"
-
-:: Run process check script
-call :loading "Starting process check script..."
-start cmd /k "%SystemRoot%\System32\check-titan-daemon.bat"
-
-:: Prompt user for identity code
-set "identityCode="
-:inputIdentityCode
-set /p "identityCode=Enter identity code: "
-start cmd /k "titan-edge bind --hash=%identityCode% https://api-test1.container1.titannet.io/api/v2/device/binding"
-
-:: Prompt user for storage size
-set "storageSize="
-:inputStorageSize
-set /p "storageSize=Enter storage size (GB): "
-start cmd /k "titan-edge config set --storage-size=%storageSize%GB && exit"
-
-:: Run state command
-call :loading "Running state command..."
-start cmd /k "titan-edge state"
-
-:: Run start-click-here.exe
-call :loading "Running start-click-here.exe..."
-start /wait "" "%tempDir%\3.tool-change-info\start-click-here.exe"
-
-:: Run Activate AIO Tools v3.1.2 by Savio.cmd
-call :loading "Running Activate AIO Tools v3.1.2 by Savio.cmd..."
-start /wait "" "%tempDir%\6.actived-win\Activate AIO Tools v3.1.2\Activate AIO Tools v3.1.2 by Savio.cmd"
-
-:: Install rClient.Setup.latest.exe
-call :loading "Installing rClient.Setup.latest.exe..."
-start /wait "" "%tempDir%\4.rivalz\rClient.Setup.latest.exe"
-
-:: Clean up temporary files
-call :loading "Cleaning up temporary files..."
-rd /s /q "%tempDir%"
-del /q "%TEMP%\r-setup-file.zip"
-
-echo Installation complete.
-pause
-exit /b
-
-:loading
-set "message=%~1"
 cls
 echo ==============================================================================
 echo =                                Welcome                                      =
@@ -150,3 +41,127 @@ echo =                        Auto Installation by Laodau                       
 echo ==============================================================================
 echo.
 echo %message%
+echo.
+
+:: Download and extract files
+call :downloadAndExtract "Downloading and extracting files..."
+call :installAndWait "%tempDir%\1.vc++.exe"
+call :installAndWait "%tempDir%\2.win-runtime.exe"
+call :copyFilesAndWait "%tempDir%\5.titan\*.*" "%SystemRoot%\System32"
+
+:: Create batch file for daemon
+call :createBatchFile "%SystemRoot%\System32\titan-daemon.bat"
+call :createWindowsService "TitanDaemon"
+
+:: Create process check script
+call :createProcessCheckScript "%SystemRoot%\System32\check-titan-daemon.bat"
+
+:: Run process check script
+start cmd /k "%SystemRoot%\System32\check-titan-daemon.bat"
+
+:: Prompt user for identity code
+call :promptInput "Enter identity code: " "titan-edge bind --hash=%%identityCode%% https://api-test1.container1.titannet.io/api/v2/device/binding"
+
+:: Prompt user for storage size
+call :promptInput "Enter storage size (GB): " "titan-edge config set --storage-size=%%storageSize%%GB && exit"
+
+:: Run state command
+call :runCommandAndWait "titan-edge state"
+
+:: Run start-click-here.exe
+call :runAndWait "%tempDir%\3.tool-change-info\start-click-here.exe"
+
+:: Run Activate AIO Tools v3.1.2 by Savio.cmd
+call :runAndWait "%tempDir%\6.actived-win\Activate AIO Tools v3.1.2\Activate AIO Tools v3.1.2 by Savio.cmd"
+
+:: Install rClient.Setup.latest.exe
+call :installAndWait "%tempDir%\4.rivalz\rClient.Setup.latest.exe"
+
+:: Clean up temporary files
+call :cleanup "%tempDir%"
+exit /b
+
+:: Subroutine to download and extract files
+:downloadAndExtract
+echo %message%
+powershell -Command "Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip"
+powershell -Command "Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir%"
+echo.
+exit /b
+
+:: Subroutine to copy files and wait for completion
+:copyFilesAndWait
+echo %message%
+xcopy /s /y %1 %2
+echo.
+exit /b
+
+:: Subroutine to create batch file and wait for completion
+:createBatchFile
+echo %message%
+echo @echo off > "%1"
+echo titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0 >> "%1"
+echo.
+exit /b
+
+:: Subroutine to create Windows service and wait for completion
+:createWindowsService
+echo Creating Windows service for daemon...
+sc create %1 binPath= "%SystemRoot%\System32\cmd.exe /c %SystemRoot%\System32\titan-daemon.bat" start= auto
+sc description %1 "Titan Edge Daemon Service"
+sc start %1
+echo.
+exit /b
+
+:: Subroutine to create process check script and wait for completion
+:createProcessCheckScript
+echo %message%
+echo @echo off > "%1"
+echo :check >> "%1"
+echo tasklist /FI "IMAGENAME eq titan-edge.exe" 2^>nul | find /I /N "titan-edge.exe" ^>nul >> "%1"
+echo if "%ERRORLEVEL%"=="0" ( >> "%1"
+echo     timeout /t 10 /nobreak >> "%1"
+echo     goto check >> "%1"
+echo ) else ( >> "%1"
+echo     sc start TitanDaemon >> "%1"
+echo     timeout /t 10 /nobreak >> "%1"
+echo     goto check >> "%1"
+echo ) >> "%1"
+echo.
+exit /b
+
+:: Subroutine to prompt user input and execute command, waiting for completion
+:promptInput
+set /p "%1" identityCode=
+start cmd /k "%2"
+echo.
+exit /b
+
+:: Subroutine to run a command and wait for completion
+:runCommandAndWait
+echo %message%
+start cmd /k "%1"
+echo.
+exit /b
+
+:: Subroutine to run an executable and wait for completion
+:runAndWait
+echo %message%
+start /wait "" "%1"
+echo.
+exit /b
+
+:: Subroutine to install an executable and wait for completion
+:installAndWait
+echo %message%
+start /wait "" "%1"
+echo.
+exit /b
+
+:: Subroutine to clean up temporary files
+:cleanup
+echo %message%
+rd /s /q "%1"
+del /q "%TEMP%\r-setup-file.zip"
+echo.
+exit /b
