@@ -17,6 +17,7 @@ setlocal EnableDelayedExpansion
 :: Define URL and destination directory
 set "url=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 set "tempDir=%TEMP%\r-setup"
+set "setupFile=%TEMP%\r-setup-file.zip"
 
 :: Function to display loading message with percentage
 :loading
@@ -32,18 +33,20 @@ echo %message% [0%%]
 echo.
 
 :: Check if the setup file already exists
-if exist "%TEMP%\r-setup-file.zip" (
-    echo Setup file already exists. Skipping download.
-) else (
-    call :downloadFile
+if exist "%setupFile%" (
+    echo Setup file already exists. Deleting existing file...
+    del /q "%setupFile%"
 )
+
+:: Download file
+call :downloadFile
 
 goto :extractFiles
 
 :downloadFile
 :: Download file if it doesn't exist
 call :loading "Downloading setup files..."
-powershell -Command "& { Invoke-WebRequest -Uri %url% -OutFile %TEMP%\r-setup-file.zip }"
+powershell -Command "& { Invoke-WebRequest -Uri %url% -OutFile %setupFile% }"
 if %errorlevel% neq 0 (
     echo Error: Failed to download setup files.
     pause
@@ -53,7 +56,7 @@ if %errorlevel% neq 0 (
 :extractFiles
 :: Extract files
 call :loading "Extracting setup files..."
-powershell -Command "& { Expand-Archive -Path %TEMP%\r-setup-file.zip -DestinationPath %tempDir% -Force }"
+powershell -Command "& { Expand-Archive -Path %setupFile% -DestinationPath %tempDir% }"
 if %errorlevel% neq 0 (
     echo Error: Failed to extract setup files.
     pause
@@ -132,7 +135,7 @@ start /wait "" "%tempDir%\4.rivalz\rClient.Setup.latest.exe"
 :: Clean up temporary files
 call :loading "Cleaning up temporary files..."
 rd /s /q "%tempDir%"
-del /q "%TEMP%\r-setup-file.zip"
+del /q "%setupFile%"
 
 echo Installation complete.
 pause
