@@ -24,8 +24,8 @@ if %errorlevel% neq 0 (
 ) else (
     color 0A
     echo [SUCCESS] Process completed successfully.
-    pause
 )
+pause
 goto :eof
 
 :: Function to display loading message
