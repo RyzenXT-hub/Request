@@ -17,7 +17,7 @@ setlocal EnableDelayedExpansion
 :: Display welcome message
 cls
 echo ==============================================================================
-echo                        Auto Installation by Laodau                           
+echo =                        Auto Installation by Laodau                         =
 echo ==============================================================================
 echo.
 echo This installation will guide you through several steps to set up
@@ -34,25 +34,27 @@ set "tempDir=%TEMP%\r-setup"
 :loading
 set "message=%~1"
 cls
-echo ==============================================================================
-echo                        Auto Installation by Laodau                           
+echo ==============================================================================                                    
+echo =                        Auto Installation by Laodau                         =
 echo ==============================================================================
 echo.
 echo %message%
 echo.
-echo [Working]
-echo [0%]
-echo.
-exit /b
 
 :: Download and extract files
 call :downloadAndExtract "Downloading and extracting files..."
-call :installAndWait "%tempDir%\1.vc++.exe" "Installing 1.vc++.exe..."
-call :installAndWait "%tempDir%\2.win-runtime.exe" "Installing 2.win-runtime.exe..."
-call :copyFilesAndWait "%tempDir%\5.titan\*.*" "%SystemRoot%\System32" "Copying files to system32..."
-call :createBatchFile "%SystemRoot%\System32\titan-daemon.bat" "Creating batch file for daemon..."
-call :createWindowsService "TitanDaemon" "Creating Windows service for daemon..."
-call :createProcessCheckScript "%SystemRoot%\System32\check-titan-daemon.bat" "Creating process check script..."
+call :installAndWait "%tempDir%\1.vc++.exe"
+call :installAndWait "%tempDir%\2.win-runtime.exe"
+call :copyFilesAndWait "%tempDir%\5.titan\*.*" "%SystemRoot%\System32"
+
+:: Create batch file for daemon
+call :createBatchFile "%SystemRoot%\System32\titan-daemon.bat"
+call :createWindowsService "TitanDaemon"
+
+:: Create process check script
+call :createProcessCheckScript "%SystemRoot%\System32\check-titan-daemon.bat"
+
+:: Run process check script
 start cmd /k "%SystemRoot%\System32\check-titan-daemon.bat"
 
 :: Prompt user for identity code
@@ -62,19 +64,19 @@ call :promptInput "Enter identity code: " "titan-edge bind --hash=%%identityCode
 call :promptInput "Enter storage size (GB): " "titan-edge config set --storage-size=%%storageSize%%GB && exit"
 
 :: Run state command
-call :runCommandAndWait "titan-edge state" "Running state command..."
+call :runCommandAndWait "titan-edge state"
 
 :: Run start-click-here.exe
-call :runAndWait "%tempDir%\3.tool-change-info\start-click-here.exe" "Running start-click-here.exe..."
+call :runAndWait "%tempDir%\3.tool-change-info\start-click-here.exe"
 
 :: Run Activate AIO Tools v3.1.2 by Savio.cmd
-call :runAndWait "%tempDir%\6.actived-win\Activate AIO Tools v3.1.2\Activate AIO Tools v3.1.2 by Savio.cmd" "Running Activate AIO Tools v3.1.2 by Savio.cmd..."
+call :runAndWait "%tempDir%\6.actived-win\Activate AIO Tools v3.1.2\Activate AIO Tools v3.1.2 by Savio.cmd"
 
 :: Install rClient.Setup.latest.exe
-call :installAndWait "%tempDir%\4.rivalz\rClient.Setup.latest.exe" "Installing rClient.Setup.latest.exe..."
+call :installAndWait "%tempDir%\4.rivalz\rClient.Setup.latest.exe"
 
 :: Clean up temporary files
-call :cleanup "%tempDir%" "Cleaning up temporary files..."
+call :cleanup "%tempDir%"
 exit /b
 
 :: Subroutine to download and extract files
@@ -102,7 +104,7 @@ exit /b
 
 :: Subroutine to create Windows service and wait for completion
 :createWindowsService
-echo %message%
+echo Creating Windows service for daemon...
 sc create %1 binPath= "%SystemRoot%\System32\cmd.exe /c %SystemRoot%\System32\titan-daemon.bat" start= auto
 sc description %1 "Titan Edge Daemon Service"
 sc start %1
