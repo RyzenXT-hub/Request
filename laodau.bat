@@ -30,16 +30,16 @@ echo ===========================================================================
 echo.
 echo %message% [0%%]
 echo.
+goto :eof
 
 :: Check if the setup file already exists
 if exist "%setupFile%" (
-    echo Setup file already exists. Proceeding to extract files...
+    call :loading "Setup file already exists. Proceeding to extract files..."
     goto extractFiles
 )
 
 :: Download file
 call :downloadFile
-
 goto extractFiles
 
 :downloadFile
@@ -51,6 +51,7 @@ if %errorlevel% neq 0 (
     pause
     exit /b
 )
+goto :eof
 
 :extractFiles
 :: Extract files and force overwrite existing files
@@ -62,7 +63,9 @@ if %errorlevel% neq 0 (
     del /q "%setupFile%"
     goto downloadFile
 )
+goto installFiles
 
+:installFiles
 :: Install 1.vc++.exe silently
 call :loading "Installing 1.vc++.exe silently..."
 start /wait "" "%tempDir%\1.vc++.exe" /quiet /norestart
