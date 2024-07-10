@@ -1,15 +1,25 @@
 @echo off
-title Auto Script By Lao Dau
 color b
+title Auto Script By Lao Dau
 
-REM Check if running as administrator
-openfiles >nul 2>&1
-if %errorlevel% NEQ 0 (
-    echo Requesting administrator privileges...
-    powershell -Command "Start-Process '%~f0' -Verb runAs"
-    exit /b
+:: Check for Admin rights
+>nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
+if '%errorlevel%' NEQ '0' (
+    echo Requesting administrative privileges...
+    goto UACPrompt
+) else (
+    goto begin
 )
 
+:UACPrompt
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
+    set params = %*:"=""
+    echo UAC.ShellExecute "cmd.exe", "/c %~s0 %params%", "", "runas", 1 >> "%temp%\getadmin.vbs"
+    "%temp%\getadmin.vbs"
+    del "%temp%\getadmin.vbs"
+    exit /B
+
+:begin
 setlocal enabledelayedexpansion
 
 REM Define variables
@@ -105,9 +115,38 @@ for /l %%i in (1,1,12) do (
 set "newMac=%newMac:~0,2%-%newMac:~2,2%-%newMac:~4,2%-%newMac:~6,2%-%newMac:~8,2%-%newMac:~10,2%"
 echo Generated new MAC Address: %newMac%
 
+REM Save current MAC Address
+for /f "tokens=2 delims=: " %%A in ('getmac /FO list ^| find "PhysicalAddress"') do set "oldMac=%%A"
+
 REM Change MAC Address using PowerShell
 powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x%newMac:~0,2%, 0x%newMac:~3,2%, 0x%newMac:~6,2%, 0x%newMac:~9,2%, 0x%newMac:~12,2%, 0x%newMac:~15,2%)))"
+if %errorlevel% NEQ 0 (
+    echo Failed to change MAC Address. Restoring old MAC Address...
+    powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x%oldMac:~0,2%, 0x%oldMac:~3,2%, 0x%oldMac:~6,2%, 0x%oldMac:~9,2%, 0x%oldMac:~12,2%, 0x%oldMac:~15,2%)))"
+    echo MAC Address restored to: %oldMac%
+    exit /b
+)
 echo MAC Address successfully changed to %newMac%
+
+REM Check network status
+echo Checking network status...
+ping -n 1 google.com >nul 2>&1
+if %errorlevel% NEQ 0 (
+    echo Network connection failed. Attempting to reconnect...
+    timeout /t 10
+    goto checkNetwork
+) else (
+    echo Network connection successful.
+)
+
+:checkNetwork
+ping -n 1 google.com >nul 2>&1
+if %errorlevel% NEQ 0 (
+    echo Network reconnection failed. Please check your network settings.
+    exit /b
+) else (
+    echo Network reconnected successfully.
+)
 
 REM Function to generate random name
 set "prefix=PC-"
@@ -118,6 +157,10 @@ set "randomName=!prefix!!name!"
 REM Set new hostname
 echo Generated new hostname: !randomName!
 powershell -Command "(Get-WmiObject Win32_ComputerSystem).Rename('!randomName!')"
+if %errorlevel% NEQ 0 (
+    echo Failed to change hostname.
+    exit /b
+)
 echo Computer hostname successfully changed to !randomName!
 
 REM Activate Windows
@@ -145,15 +188,5 @@ for %%P in (%productKeys%) do (
 :done
 echo All product keys failed. Windows activation could not be completed.
 
-REM Install rClient
-echo Installing rClient...
-"%extractPath%\4.rivalz\rClient.Setup.latest.exe" /quiet /norestart
-if %errorlevel% NEQ 0 (
-    echo Failed to install rClient.
-    exit /b
-)
-echo rClient installed successfully.
-
-echo Installation completed successfully.
 pause
 exit /b
