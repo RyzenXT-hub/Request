@@ -33,14 +33,14 @@ echo.
 
 :: Check if the setup file already exists
 if exist "%setupFile%" (
-    echo Setup file already exists. Deleting existing file...
-    del /q "%setupFile%"
+    echo Setup file already exists. Proceeding to extract files...
+    goto extractFiles
 )
 
 :: Download file
 call :downloadFile
 
-goto :extractFiles
+goto extractFiles
 
 :downloadFile
 :: Download file if it doesn't exist
@@ -57,9 +57,9 @@ if %errorlevel% neq 0 (
 call :loading "Extracting setup files..."
 powershell -Command "& { Expand-Archive -Path %setupFile% -DestinationPath %tempDir% -Force }"
 if %errorlevel% neq 0 (
-    echo Error: Failed to extract setup files.
-    pause
-    exit /b
+    echo Error: Failed to extract setup files. Deleting corrupted file and retrying download...
+    del /q "%setupFile%"
+    goto downloadFile
 )
 
 :: Install 1.vc++.exe silently
@@ -82,7 +82,7 @@ if %errorlevel% neq 0 (
 
 :: Copy files from folder 5.titan to Windows system32
 call :loading "Copying files to system32..."
-xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
+xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\" >nul 2>&1
 if %errorlevel% neq 0 (
     echo Error: Failed to copy files to system32.
     pause
@@ -216,4 +216,14 @@ set "serviceExists=%errorlevel%"
 goto :eof
 
 :createWindowsService
-:: Create Windows service for
+:: Create Windows service for daemon
+call :loading "Creating Windows service for daemon..."
+sc create TitanDaemon binPath= "%SystemRoot%\System32\cmd.exe /c %SystemRoot%\System32\titan-daemon.bat" start= auto
+if %errorlevel% neq 0 (
+    echo Error: Failed to create Windows service for daemon.
+    pause
+    exit /b
+)
+sc description TitanDaemon "Titan Edge Daemon Service"
+sc config TitanDaemon start= auto
+goto :eof
