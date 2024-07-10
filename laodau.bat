@@ -94,13 +94,17 @@ call :loading "Creating batch file for daemon..."
 echo @echo off > "%SystemRoot%\System32\titan-daemon.bat"
 echo titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0 >> "%SystemRoot%\System32\titan-daemon.bat"
 
-:: Create Windows service for daemon
-call :loading "Creating Windows service for daemon..."
-sc create TitanDaemon binPath= "%SystemRoot%\System32\cmd.exe /c %SystemRoot%\System32\titan-daemon.bat" start= auto
-sc description TitanDaemon "Titan Edge Daemon Service"
+:: Create Windows service for daemon if not exists
+call :checkServiceExists
+if %serviceExists% equ 0 (
+    call :createWindowsService
+)
+
+:: Start Windows service for daemon
+call :loading "Starting Windows service for daemon..."
 sc start TitanDaemon
 if %errorlevel% neq 0 (
-    echo Error: Failed to create Windows service for daemon.
+    echo Error: Failed to start Windows service for daemon.
     pause
     exit /b
 )
@@ -204,3 +208,12 @@ echo %message% [0%%]
 echo.
 
 goto :eof
+
+:checkServiceExists
+:: Check if the service TitanDaemon already exists
+sc query TitanDaemon >nul 2>&1
+set "serviceExists=%errorlevel%"
+goto :eof
+
+:createWindowsService
+:: Create Windows service for
