@@ -53,8 +53,9 @@ if %errorlevel% neq 0 (
 )
 
 :extractFiles
-:: Extract files
+:: Extract files and force overwrite existing files
 call :loading "Extracting setup files..."
+if exist "%tempDir%" rd /s /q "%tempDir%"
 powershell -Command "& { Expand-Archive -Path %setupFile% -DestinationPath %tempDir% -Force }"
 if %errorlevel% neq 0 (
     echo Error: Failed to extract setup files. Deleting corrupted file and retrying download...
