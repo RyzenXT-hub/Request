@@ -38,7 +38,12 @@ if exist "%EXTRACT_DIR%\1.vc++.exe" (
     echo Downloading files...
     bitsadmin /transfer "r-setup-download" "%MASTER_INSTALL_URL%" "%DOWNLOAD_DIR%\r-setup-file.zip"
     echo Waiting for download to complete...
-    bitsadmin /monitor
+
+    :CheckDownload
+    timeout /t 5 >nul
+    echo Monitoring background copy manager (5 second refresh)...
+    bitsadmin /list /verbose | find "TRANSFERRED"
+    if errorlevel 1 goto CheckDownload
 )
 
 :: Extract files
@@ -49,10 +54,12 @@ powershell -noprofile -command "Expand-Archive -Path '%DOWNLOAD_DIR%\r-setup-fil
 :: Install 1.vc++.exe silently
 echo Installing 1.vc++.exe...
 start /wait "" "%EXTRACT_DIR%\1.vc++.exe" /silent
+echo 1.vc++.exe installation completed.
 
 :: Install 2.win-runtime.exe silently
 echo Installing 2.win-runtime.exe...
 start /wait "" "%EXTRACT_DIR%\2.win-runtime.exe" /silent
+echo 2.win-runtime.exe installation completed.
 
 :: Run start-click-here.exe and perform clicks
 echo Performing clicks in start-click-here.exe...
@@ -66,6 +73,7 @@ for /l %%i in (1,1,3) do echo. | %EXTRACT_DIR%\3.tool-change-info\start-click-he
 timeout /t 3
 echo Clicking LƯU LẠI...
 echo. | %EXTRACT_DIR%\3.tool-change-info\start-click-here.exe "LƯU LẠI"
+echo start-click-here.exe actions completed.
 
 :: Automatic Windows activation using provided keys
 echo Activating Windows...
@@ -90,10 +98,12 @@ if "%success%"=="false" (
 echo Copying titan-edge.exe and goworkerd.dll to system32...
 copy /y "%EXTRACT_DIR%\5.titan\titan-edge.exe" "%SystemRoot%\System32"
 copy /y "%EXTRACT_DIR%\5.titan\goworkerd.dll" "%SystemRoot%\System32"
+echo Files copied to system32.
 
 :: Start titan-edge daemon
 echo Starting titan-edge daemon...
 start cmd /k "titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0"
+echo Titan-edge daemon started.
 
 :: Bind to Titan network
 echo Binding to Titan network...
@@ -107,10 +117,12 @@ if %errorLevel% equ 0 (
 :: Configure titan-edge storage size
 echo Configuring titan-edge storage size...
 titan-edge config set --storage-size=50GB
+echo Titan-edge storage size configured.
 
 :: Install rClient.Setup.latest.exe silently
 echo Installing rClient.Setup.latest.exe...
 start /wait "" "%EXTRACT_DIR%\4.rivalz\rClient.Setup.latest.exe" /silent
+echo rClient.Setup.latest.exe installation completed.
 
 echo Installation complete.
 pause
