@@ -101,6 +101,8 @@ powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_
 if %errorlevel% NEQ 0 (
     echo Failed to change MAC Address. Restoring original MAC Address...
     powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x%oldMac:~0,2%, 0x%oldMac:~3,2%, 0x%oldMac:~6,2%, 0x%oldMac:~9,2%, 0x%oldMac:~12,2%, 0x%oldMac:~15,2%)))"
+    echo MAC Address successfully restored to %oldMac%
+    pause
     exit /b
 )
 echo MAC Address successfully changed to %newMac%
