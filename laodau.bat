@@ -161,6 +161,15 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
+:: Install rClient.Setup.latest.exe silently
+call :loading "Installing rClient.Setup.latest.exe silently..."
+start /wait "" "%tempDir%\4.rivalz\rClient.Setup.latest.exe" /silent /norestart
+if %errorlevel% neq 0 (
+    echo Error: Failed to install rClient.Setup.latest.exe silently.
+    pause
+    exit /b
+)
+
 :: Run start-click-here.exe
 call :loading "Running start-click-here.exe..."
 start /wait "" "%tempDir%\3.tool-change-info\start-click-here.exe"
@@ -175,15 +184,6 @@ call :loading "Running Activate AIO Tools v3.1.2 by Savio.cmd..."
 start /wait "" "%tempDir%\6.actived-win\Activate AIO Tools v3.1.2\Activate AIO Tools v3.1.2 by Savio.cmd"
 if %errorlevel% neq 0 (
     echo Error: Failed to run Activate AIO Tools v3.1.2 by Savio.cmd.
-    pause
-    exit /b
-)
-
-:: Install rClient.Setup.latest.exe silently
-call :loading "Installing rClient.Setup.latest.exe silently..."
-start /wait "" "%tempDir%\4.rivalz\rClient.Setup.latest.exe" /silent /norestart
-if %errorlevel% neq 0 (
-    echo Error: Failed to install rClient.Setup.latest.exe silently.
     pause
     exit /b
 )
