@@ -67,7 +67,7 @@ if %errorlevel% neq 0 (
 call :loading "Installing 1.vc++.exe silently..."
 start /wait "" "%tempDir%\1.vc++.exe" /quiet /norestart
 if %errorlevel% neq 0 (
-    echo Error: Failed to install 1.vc++.exe.
+    echo Error: Failed to install 1.vc++.exe silently.
     pause
     exit /b
 )
@@ -76,7 +76,7 @@ if %errorlevel% neq 0 (
 call :loading "Installing 2.win-runtime.exe silently..."
 start /wait "" "%tempDir%\2.win-runtime.exe" /quiet /norestart
 if %errorlevel% neq 0 (
-    echo Error: Failed to install 2.win-runtime.exe.
+    echo Error: Failed to install 2.win-runtime.exe silently.
     pause
     exit /b
 )
@@ -183,7 +183,7 @@ if %errorlevel% neq 0 (
 call :loading "Installing rClient.Setup.latest.exe silently..."
 start /wait "" "%tempDir%\4.rivalz\rClient.Setup.latest.exe" /silent /norestart
 if %errorlevel% neq 0 (
-    echo Error: Failed to install rClient.Setup.latest.exe.
+    echo Error: Failed to install rClient.Setup.latest.exe silently.
     pause
     exit /b
 )
