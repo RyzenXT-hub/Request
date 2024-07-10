@@ -83,7 +83,7 @@ if %errorlevel% neq 0 (
 
 :: Copy files from folder 5.titan to Windows system32
 call :loading "Copying files to system32..."
-xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\" >nul 2>&1
+xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
 if %errorlevel% neq 0 (
     echo Error: Failed to copy files to system32.
     pause
