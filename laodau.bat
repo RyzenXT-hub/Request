@@ -182,7 +182,7 @@ icacls "%SystemRoot%\System32" /grant:r Administrators:(OI)(CI)F /T >nul 2>&1
 :: Copy files without retry loop
 xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
 if %errorlevel% neq 0 (
-    echo Error: Failed to copy files to system32 after multiple attempts.
+    echo Error: Failed to copy files to system32. Please check permissions.
     pause
     exit /b
 )
