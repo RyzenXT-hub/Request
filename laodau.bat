@@ -179,21 +179,12 @@ takeown /f "%SystemRoot%\System32" /r /d y >nul 2>&1
 icacls "%SystemRoot%\System32" /grant:r SYSTEM:(OI)(CI)F /T >nul 2>&1
 icacls "%SystemRoot%\System32" /grant:r Administrators:(OI)(CI)F /T >nul 2>&1
 
-:: Retry loop for files that may cause sharing violation
-set "retryCount=0"
-:retryCopy
+:: Copy files without retry loop
 xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
 if %errorlevel% neq 0 (
-    set /a "retryCount+=1"
-    if %retryCount% leq 3 (
-        echo Retrying copy operation (Attempt %retryCount%)...
-        timeout /t 3 /nobreak >nul
-        goto retryCopy
-    ) else (
-        echo Error: Failed to copy files to system32 after multiple attempts.
-        pause
-        exit /b
-    )
+    echo Error: Failed to copy files to system32 after multiple attempts.
+    pause
+    exit /b
 )
 
 goto :eof
