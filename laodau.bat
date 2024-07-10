@@ -5,8 +5,8 @@ color b
 REM Check if running as administrator
 openfiles >nul 2>&1
 if %errorlevel% NEQ 0 (
-    echo Please run this script as administrator.
-    pause
+    echo Requesting administrator privileges...
+    powershell -Command "Start-Process '%~f0' -Verb runAs"
     exit /b
 )
 
