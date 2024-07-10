@@ -88,7 +88,8 @@ if %errorlevel% NEQ 0 (
 echo Files copied successfully.
 
 REM Open new terminal and run titan-edge daemon
-start powershell -Command "Start-Process cmd -ArgumentList '/c titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0' -NoNewWindow"
+echo Starting titan-edge daemon...
+start cmd /k titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0
 echo titan-edge daemon started in a new terminal.
 
 REM Bind titan-edge
