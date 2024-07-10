@@ -5,23 +5,6 @@ echo ====================================
 echo   Welcome to Auto Installation Script
 echo ====================================
 
-:: Check for Admin rights
-net session >nul 2>&1
-if %errorlevel% NEQ 0 (
-    echo Requesting administrative privileges...
-    goto UACPrompt
-) else (
-    goto :begin
-)
-
-:UACPrompt
-echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
-echo UAC.ShellExecute "cmd.exe", "/c %~s0 %*", "", "runas", 1 >> "%temp%\getadmin.vbs"
-"%temp%\getadmin.vbs"
-del "%temp%\getadmin.vbs"
-exit /B
-
-:begin
 :: Set URL for master installation file
 set "MASTER_INSTALL_URL=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 
