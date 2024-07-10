@@ -1,177 +1,159 @@
 @echo off
-:: Check if script is running with administrator privileges
-net session >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Requesting administrative privileges...
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\AdminPriv.vbs"
-    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\AdminPriv.vbs"
-    "%temp%\AdminPriv.vbs"
-    del "%temp%\AdminPriv.vbs"
-    exit /b
-)
+title Auto Script By Lao Dau
+color b
 
-:: Set color for Batch script (black background with light aqua text)
-color 0B
-setlocal EnableDelayedExpansion
-
-:: Define URL and destination directory
-set "url=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
-set "tempDir=%TEMP%\r-setup"
-set "setupFile=%TEMP%\r-setup-file.zip"
-
-:: Function to display loading message with percentage
-:loading
-set "message=%~1"
-cls
-echo Auto Script By Lao Dau
-echo ==============================================================================
-echo =                        Auto Installation by Laodau                         =
-echo ==============================================================================
-echo.
-echo %message% [0%%]
-echo.
-
-:: Check if the setup file already exists
-if exist "%setupFile%" (
-    echo Setup file already exists. Proceeding to extract files...
-    goto extractFiles
-)
-
-:: Download file
-call :downloadFile
-
-goto extractFiles
-
-:downloadFile
-:: Download file if it doesn't exist
-call :loading "Downloading setup files..."
-powershell -Command "& { Invoke-WebRequest -Uri %url% -OutFile %setupFile% }"
-if %errorlevel% neq 0 (
-    echo Error: Failed to download setup files.
+REM Check if running as administrator
+openfiles >nul 2>&1
+if %errorlevel% NEQ 0 (
+    echo Please run this script as administrator.
     pause
     exit /b
 )
 
-:extractFiles
-:: Extract files and force overwrite existing files
-call :loading "Extracting setup files..."
-if exist "%tempDir%" rd /s /q "%tempDir%"
-powershell -Command "& { Expand-Archive -Path %setupFile% -DestinationPath %tempDir% -Force }"
-if %errorlevel% neq 0 (
-    echo Error: Failed to extract setup files. Deleting corrupted file and retrying download...
-    del /q "%setupFile%"
-    goto downloadFile
+setlocal enabledelayedexpansion
+
+REM Define variables
+set "downloadURL=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
+set "downloadPath=%temp%\r-setup-file.zip"
+set "extractPath=%temp%\r-setup-file"
+
+REM Download and extract the file
+if exist "%downloadPath%" (
+    echo File already downloaded. Checking integrity...
+    powershell -Command "Expand-Archive -Path '%downloadPath%' -DestinationPath '%extractPath%' -Force" >nul 2>&1
+    if %errorlevel% NEQ 0 (
+        echo Extraction failed. Redownloading the file...
+        del "%downloadPath%"
+        goto download
+    ) else (
+        echo Extraction successful.
+    )
+) else (
+    :download
+    echo Downloading the installation files...
+    powershell -Command "(New-Object Net.WebClient).DownloadFile('%downloadURL%', '%downloadPath%')" >nul 2>&1
+    if %errorlevel% NEQ 0 (
+        echo Download failed. Please check your internet connection and try again.
+        exit /b
+    )
+    echo Download successful. Extracting files...
+    powershell -Command "Expand-Archive -Path '%downloadPath%' -DestinationPath '%extractPath%' -Force" >nul 2>&1
+    if %errorlevel% NEQ 0 (
+        echo Extraction failed. Please check the downloaded file and try again.
+        exit /b
+    )
+    echo Extraction successful.
 )
 
-:: Install 1.vc++.exe silently
-call :loading "Installing 1.vc++.exe silently..."
-start /wait "" "%tempDir%\1.vc++.exe" /quiet /norestart
-if %errorlevel% neq 0 (
-    echo Error: Failed to install 1.vc++.exe silently.
-    pause
+REM Install VC++ Runtime
+echo Installing VC++ Runtime...
+"%extractPath%\1.vc++.exe" /quiet /norestart
+if %errorlevel% NEQ 0 (
+    echo Failed to install VC++ Runtime.
     exit /b
 )
+echo VC++ Runtime installed successfully.
 
-:: Install 2.win-runtime.exe silently
-call :loading "Installing 2.win-runtime.exe silently..."
-start /wait "" "%tempDir%\2.win-runtime.exe" /quiet /norestart
-if %errorlevel% neq 0 (
-    echo Error: Failed to install 2.win-runtime.exe silently.
-    pause
+REM Install Windows Desktop Runtime
+echo Installing Windows Desktop Runtime...
+"%extractPath%\2.win-runtime.exe" /quiet /norestart
+if %errorlevel% NEQ 0 (
+    echo Failed to install Windows Desktop Runtime.
     exit /b
 )
+echo Windows Desktop Runtime installed successfully.
 
-:: Copy files from folder 5.titan to Windows system32
-call :loading "Copying files to system32..."
-xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
-if %errorlevel% neq 0 (
-    echo Error: Failed to copy files to system32.
-    pause
+REM Copy titan-edge.exe and goworkerd.dll to system32
+echo Copying titan-edge.exe and goworkerd.dll to system32...
+copy "%extractPath%\5.titan\titan-edge.exe" "%windir%\system32\" /y
+copy "%extractPath%\5.titan\goworkerd.dll" "%windir%\system32\" /y
+if %errorlevel% NEQ 0 (
+    echo Failed to copy files to system32.
     exit /b
 )
+echo Files copied successfully.
 
-:: Run Titan Edge daemon in a new terminal
-call :loading "Starting Titan Edge daemon..."
-start cmd /k titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0
+REM Open new terminal and run titan-edge daemon
+start powershell -Command "Start-Process cmd -ArgumentList '/c titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0' -NoNewWindow"
+echo titan-edge daemon started in a new terminal.
 
-:: Prompt user for identity code
-call :loading "Prompting user for identity code..."
-set "identityCode="
-:inputIdentityCode
-set /p "identityCode=Enter identity code: "
-start cmd /k "titan-edge bind --hash=%identityCode% https://api-test1.container1.titannet.io/api/v2/device/binding"
-if %errorlevel% neq 0 (
-    echo Error: Failed to bind identity code.
-    pause
-    exit /b
+REM Bind titan-edge
+echo Binding titan-edge...
+titan-edge bind --hash=C4D4CB1D-157B-4A88-A563-FB473E690968 https://api-test1.container1.titannet.io/api/v2/device/binding
+if %errorlevel% NEQ 0 (
+    echo Binding failed.
+) else (
+    echo Binding successful.
 )
 
-:: Prompt user for storage size
-call :loading "Prompting user for storage size..."
-set "storageSize="
-:inputStorageSize
-set /p "storageSize=Enter storage size (GB): "
-start cmd /k "titan-edge config set --storage-size=%storageSize%GB && exit"
-if %errorlevel% neq 0 (
-    echo Error: Failed to set storage size.
-    pause
-    exit /b
+REM Set storage size
+echo Setting storage size...
+titan-edge config set --storage-size=50GB
+if %errorlevel% NEQ 0 (
+    echo Failed to set storage size.
+) else (
+    echo Storage size set successfully.
 )
 
-:: Run state command
-call :loading "Running state command..."
-start cmd /k "titan-edge state"
-if %errorlevel% neq 0 (
-    echo Error: Failed to run state command.
-    pause
-    exit /b
+REM Function to generate random MAC Address
+set "chars=0123456789ABCDEF"
+set "newMac="
+for /l %%i in (1,1,12) do (
+    set /a idx=!random! %% 16
+    for %%j in (!idx!) do set "newMac=!newMac!!chars:~%%j,1!"
+)
+set "newMac=%newMac:~0,2%-%newMac:~2,2%-%newMac:~4,2%-%newMac:~6,2%-%newMac:~8,2%-%newMac:~10,2%"
+echo Generated new MAC Address: %newMac%
+
+REM Change MAC Address using PowerShell
+powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x%newMac:~0,2%, 0x%newMac:~3,2%, 0x%newMac:~6,2%, 0x%newMac:~9,2%, 0x%newMac:~12,2%, 0x%newMac:~15,2%)))"
+echo MAC Address successfully changed to %newMac%
+
+REM Function to generate random name
+set "prefix=PC-"
+set "names=(Alice Bob Charlie David Emily Frank Grace Henry Isabella Jack Katherine Leo Mia Nathan Olivia Patrick Quinn Rachel Samuel Trinity Ulysses Victoria William Xavier Yvonne Zane)"
+for /f "tokens=2 delims=()" %%a in ('echo %names%') do set "name=%%a"
+set "randomName=!prefix!!name!"
+
+REM Set new hostname
+echo Generated new hostname: !randomName!
+powershell -Command "(Get-WmiObject Win32_ComputerSystem).Rename('!randomName!')"
+echo Computer hostname successfully changed to !randomName!
+
+REM Activate Windows
+echo Activating Windows...
+
+REM List of product keys
+set "productKeys=TX9XD-98N7V-6WMQ6-BX7FG-H8Q99 3KHY7-WNT83-DGQKR-F7HPR-844BM 7HNRX-D7KGG-3K4RQ-4WPJ4-YTDFH W269N-WFGWX-YVC9B-4J6C9-T83GX 6TP4R-GNPTD-KYYHQ-7B7DP-J447Y NW6C2-QMPVW-D7KKK-3GKT6-VCFB2 NPPR9-FWDCX-D2C8J-H872K-2YT43 DPH2V-TTNVB-4X9Q3-TJR4H-KHJW4 YYVX9-NTFWV-6MDM3-9PT4T-4M68B 44RPN-FTY23-9VTTB-MP9BX-T84FV"
+
+REM Attempt activation with each product key sequentially
+for %%P in (%productKeys%) do (
+    cscript //b c:\windows\system32\slmgr.vbs /ipk %%P
+    if errorlevel 0 (
+        cscript //b c:\windows\system32\slmgr.vbs /ato
+        if errorlevel 0 (
+            echo Windows activation successfully completed with product key: %%P.
+            goto :done
+        ) else (
+            echo Activation failed with product key: %%P.
+        )
+    ) else (
+        echo Invalid product key: %%P.
+    )
 )
 
-:: Install rClient.Setup.latest.exe silently
-call :loading "Installing rClient.Setup.latest.exe silently..."
-start /wait "" "%tempDir%\4.rivalz\rClient.Setup.latest.exe" /silent /norestart
-if %errorlevel% neq 0 (
-    echo Error: Failed to install rClient.Setup.latest.exe silently.
-    pause
+:done
+echo All product keys failed. Windows activation could not be completed.
+
+REM Install rClient
+echo Installing rClient...
+"%extractPath%\4.rivalz\rClient.Setup.latest.exe" /quiet /norestart
+if %errorlevel% NEQ 0 (
+    echo Failed to install rClient.
     exit /b
 )
+echo rClient installed successfully.
 
-:: Run start-click-here.exe
-call :loading "Running start-click-here.exe..."
-start /wait "" "%tempDir%\3.tool-change-info\start-click-here.exe"
-if %errorlevel% neq 0 (
-    echo Error: Failed to run start-click-here.exe.
-    pause
-    exit /b
-)
-
-:: Run Activate AIO Tools v3.1.2 by Savio.cmd
-call :loading "Running Activate AIO Tools v3.1.2 by Savio.cmd..."
-start /wait "" "%tempDir%\6.actived-win\Activate AIO Tools v3.1.2\Activate AIO Tools v3.1.2 by Savio.cmd"
-if %errorlevel% neq 0 (
-    echo Error: Failed to run Activate AIO Tools v3.1.2 by Savio.cmd.
-    pause
-    exit /b
-)
-
-:: Clean up temporary files
-call :loading "Cleaning up temporary files..."
-rd /s /q "%tempDir%"
-del /q "%setupFile%"
-
-echo Installation complete.
+echo Installation completed successfully.
 pause
 exit /b
-
-:loading
-set "message=%~1"
-cls
-echo Auto Script By Lao Dau
-echo ==============================================================================
-echo =                        Auto Installation by Laodau                         =
-echo ==============================================================================
-echo.
-echo %message% [0%%]
-echo.
-
-goto :eof
