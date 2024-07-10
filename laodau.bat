@@ -68,8 +68,12 @@ REM Install Windows Desktop Runtime
 echo Installing Windows Desktop Runtime...
 "%extractPath%\2.win-runtime.exe" /quiet /norestart
 if %errorlevel% NEQ 0 (
-    echo Failed to install Windows Desktop Runtime.
-    exit /b
+    echo Failed to install Windows Desktop Runtime. Retrying once...
+    "%extractPath%\2.win-runtime.exe" /quiet /norestart
+    if %errorlevel% NEQ 0 (
+        echo Failed to install Windows Desktop Runtime again. Exiting...
+        exit /b
+    )
 )
 echo Windows Desktop Runtime installed successfully.
 
