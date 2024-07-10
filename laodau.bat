@@ -1,6 +1,9 @@
 @echo off
-color b
 title Auto Script By Lao Dau
+color b
+echo ====================================
+echo   Welcome to Auto Installation Script
+echo ====================================
 
 :: Check for Admin rights
 >nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
@@ -8,174 +11,107 @@ if '%errorlevel%' NEQ '0' (
     echo Requesting administrative privileges...
     goto UACPrompt
 ) else (
-    goto begin
+    goto :begin
 )
 
 :UACPrompt
 echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\getadmin.vbs"
 set params = %*:"=""
 echo UAC.ShellExecute "cmd.exe", "/c %~s0 %params%", "", "runas", 1 >> "%temp%\getadmin.vbs"
+
 "%temp%\getadmin.vbs"
 del "%temp%\getadmin.vbs"
 exit /B
 
 :begin
-setlocal enabledelayedexpansion
+:: Set URL for master installation file
+set "MASTER_INSTALL_URL=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 
-REM Define variables
-set "downloadURL=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
-set "downloadPath=%temp%\r-setup-file.zip"
-set "extractPath=%temp%\r-setup-file"
+:: Set download and extraction directories
+set "DOWNLOAD_DIR=%TEMP%"
+set "EXTRACT_DIR=%TEMP%\r-setup-files"
 
-REM Download and extract the file
-if exist "%downloadPath%" (
-    echo File already downloaded. Checking integrity...
-    powershell -Command "Expand-Archive -Path '%downloadPath%' -DestinationPath '%extractPath%' -Force" >nul 2>&1
-    if %errorlevel% NEQ 0 (
-        echo Extraction failed. Redownloading the file...
-        del "%downloadPath%"
-        goto download
-    ) else (
-        echo Extraction successful.
-    )
+:: Check if files already exist
+if exist "%EXTRACT_DIR%\1.vc++.exe" (
+    echo Found existing files. Skipping download...
 ) else (
-    :download
-    echo Downloading the installation files...
-    powershell -Command "(New-Object Net.WebClient).DownloadFile('%downloadURL%', '%downloadPath%')" >nul 2>&1
-    if %errorlevel% NEQ 0 (
-        echo Download failed. Please check your internet connection and try again.
-        exit /b
-    )
-    echo Download successful. Extracting files...
-    powershell -Command "Expand-Archive -Path '%downloadPath%' -DestinationPath '%extractPath%' -Force" >nul 2>&1
-    if %errorlevel% NEQ 0 (
-        echo Extraction failed. Please check the downloaded file and try again.
-        exit /b
-    )
-    echo Extraction successful.
+    echo Downloading files...
+    bitsadmin /transfer "r-setup-download" "%MASTER_INSTALL_URL%" "%DOWNLOAD_DIR%\r-setup-file.zip"
+    echo Waiting for download to complete...
+    bitsadmin /monitor
 )
 
-REM Install VC++ Runtime
-echo Installing VC++ Runtime...
-"%extractPath%\1.vc++.exe" /quiet /norestart
-if %errorlevel% NEQ 0 (
-    echo Failed to install VC++ Runtime.
-    exit /b
-)
-echo VC++ Runtime installed successfully.
+:: Extract files
+echo Extracting files...
+if exist "%EXTRACT_DIR%" rmdir /s /q "%EXTRACT_DIR%"
+powershell -noprofile -command "Expand-Archive -Path '%DOWNLOAD_DIR%\r-setup-file.zip' -DestinationPath '%EXTRACT_DIR%'"
 
-REM Install Windows Desktop Runtime
-echo Installing Windows Desktop Runtime...
-"%extractPath%\2.win-runtime.exe" /quiet /norestart
-if %errorlevel% NEQ 0 (
-    echo Failed to install Windows Desktop Runtime.
-    exit /b
-)
-echo Windows Desktop Runtime installed successfully.
+:: Install 1.vc++.exe silently
+echo Installing 1.vc++.exe...
+start /wait "" "%EXTRACT_DIR%\1.vc++.exe" /silent
 
-REM Copy titan-edge.exe and goworkerd.dll to system32
-echo Copying titan-edge.exe and goworkerd.dll to system32...
-copy "%extractPath%\5.titan\titan-edge.exe" "%windir%\system32\" /y
-copy "%extractPath%\5.titan\goworkerd.dll" "%windir%\system32\" /y
-if %errorlevel% NEQ 0 (
-    echo Failed to copy files to system32.
-    exit /b
-)
-echo Files copied successfully.
+:: Install 2.win-runtime.exe silently
+echo Installing 2.win-runtime.exe...
+start /wait "" "%EXTRACT_DIR%\2.win-runtime.exe" /silent
 
-REM Function to generate random MAC Address
-set "newMac="
-set "chars=0123456789ABCDEF"
-for /L %%i in (1,1,6) do (
-    set /a "byte=!random! %% 256"
-    set "hex=!chars:~%byte%,1!"
-    set "newMac=!newMac!!hex!"
-    if %%i LSS 6 if %%i NEQ 5 set "newMac=!newMac!-"
-)
-echo Generated new MAC Address: %newMac%
+:: Run start-click-here.exe and perform clicks
+echo Performing clicks in start-click-here.exe...
+start "" "%EXTRACT_DIR%\3.tool-change-info\start-click-here.exe"
+timeout /t 5
+echo Clicking VÀO SỬ DỤNG...
+echo. | %EXTRACT_DIR%\3.tool-change-info\start-click-here.exe "VÀO SỬ DỤNG"
+timeout /t 3
+echo Clicking TAO TỰ ĐỘNG (3 times)...
+for /l %%i in (1,1,3) do echo. | %EXTRACT_DIR%\3.tool-change-info\start-click-here.exe "TAO TỰ ĐỘNG"
+timeout /t 3
+echo Clicking LƯU LẠI...
+echo. | %EXTRACT_DIR%\3.tool-change-info\start-click-here.exe "LƯU LẠI"
 
-REM Save current MAC Address
-for /f "tokens=2 delims=: " %%A in ('getmac /FO list ^| find "PhysicalAddress"') do set "oldMac=%%A"
-
-REM Change MAC Address using PowerShell
-powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x$(echo %newMac:~0,2%), 0x$(echo %newMac:~3,2%), 0x$(echo %newMac:~6,2%), 0x$(echo %newMac:~9,2%), 0x$(echo %newMac:~12,2%), 0x$(echo %newMac:~15,2%)))"
-if %errorlevel% NEQ 0 (
-    echo Failed to change MAC Address. Restoring original MAC Address...
-    powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x$(echo %oldMac:~0,2%), 0x$(echo %oldMac:~3,2%), 0x$(echo %oldMac:~6,2%), 0x$(echo %oldMac:~9,2%), 0x$(echo %oldMac:~12,2%), 0x$(echo %oldMac:~15,2%)))"
-    echo MAC Address successfully restored to %oldMac%
-    pause
-    exit /b
-)
-echo MAC Address successfully changed to %newMac%
-
-REM Check network status
-echo Checking network status...
-ping -n 1 google.com >nul 2>&1
-if %errorlevel% NEQ 0 (
-    echo Network connection failed. Attempting to reconnect...
-    timeout /t 10
-    goto checkNetwork
-) else (
-    echo Network connection successful.
-)
-
-:checkNetwork
-ping -n 1 google.com >nul 2>&1
-if %errorlevel% NEQ 0 (
-    echo Network reconnection failed. Please check your network settings.
-    exit /b
-) else (
-    echo Network reconnected successfully.
-)
-
-REM Function to generate random name
-set "prefix=PC-"
-set "names=(Alice Bob Charlie David Emily Frank Grace Henry Isabella Jack Katherine Leo Mia Nathan Olivia Patrick Quinn Rachel Samuel Trinity Ulysses Victoria William Xavier Yvonne Zane)"
-for /f "tokens=2 delims=()" %%a in ('echo %names%') do set "name=%%a"
-set "randomName=!prefix!!name!"
-
-REM Set new hostname
-echo Generated new hostname: !randomName!
-powershell -Command "(Get-WmiObject Win32_ComputerSystem).Rename('!randomName!')"
-if %errorlevel% NEQ 0 (
-    echo Failed to change hostname.
-    exit /b
-)
-echo Computer hostname successfully changed to !randomName!
-
-REM Activate Windows
+:: Automatic Windows activation using provided keys
 echo Activating Windows...
+set "activation_keys=TX9XD-98N7V-6WMQ6-BX7FG-H8Q99 3KHY7-WNT83-DGQKR-F7HPR-844BM 7HNRX-D7KGG-3K4RQ-4WPJ4-YTDFH W269N-WFGWX-YVC9B-4J6C9-T83GX 6TP4R-GNPTD-KYYHQ-7B7DP-J447Y NW6C2-QMPVW-D7KKK-3GKT6-VCFB2 NPPR9-FWDCX-D2C8J-H872K-2YT43 DPH2V-TTNVB-4X9Q3-TJR4H-KHJW4 YYVX9-NTFWV-6MDM3-9PT4T-4M68B 44RPN-FTY23-9VTTB-MP9BX-T84FV"
+set "success=false"
 
-REM List of product keys
-set "productKeys=TX9XD-98N7V-6WMQ6-BX7FG-H8Q99 3KHY7-WNT83-DGQKR-F7HPR-844BM 7HNRX-D7KGG-3K4RQ-4WPJ4-YTDFH W269N-WFGWX-YVC9B-4J6C9-T83GX 6TP4R-GNPTD-KYYHQ-7B7DP-J447Y NW6C2-QMPVW-D7KKK-3GKT6-VCFB2 NPPR9-FWDCX-D2C8J-H872K-2YT43 DPH2V-TTNVB-4X9Q3-TJR4H-KHJW4 YYVX9-NTFWV-6MDM3-9PT4T-4M68B 44RPN-FTY23-9VTTB-MP9BX-T84FV"
-
-REM Attempt activation with each product key sequentially
-for %%P in (%productKeys%) do (
-    cscript //b c:\windows\system32\slmgr.vbs /ipk %%P
-    if errorlevel 0 (
-        cscript //b c:\windows\system32\slmgr.vbs /ato
-        if errorlevel 0 (
-            echo Windows activation successfully completed with product key: %%P.
-            goto :installRClient
-        ) else (
-            echo Activation failed with product key: %%P.
-        )
-    ) else (
-        echo Invalid product key: %%P.
+for %%k in (%activation_keys%) do (
+    slmgr /ipk %%k >nul 2>&1
+    if %errorLevel% equ 0 (
+        set "success=true"
+        echo Windows activated successfully with key: %%k
+        timeout /t 5
+        break
     )
 )
 
-:installRClient
-REM Install rClient
-echo Installing rClient...
-"%extractPath%\4.rivalz\rClient.Setup.latest.exe" /quiet /norestart
-if %errorlevel% NEQ 0 (
-    echo Failed to install rClient.
-    exit /b
+if "%success%"=="false" (
+    echo Failed to activate Windows with provided keys.
 )
-echo rClient installed successfully.
 
-echo Installation completed successfully.
+:: Copy titan-edge.exe and goworkerd.dll to Windows system32
+echo Copying titan-edge.exe and goworkerd.dll to system32...
+copy /y "%EXTRACT_DIR%\5.titan\titan-edge.exe" "%SystemRoot%\System32"
+copy /y "%EXTRACT_DIR%\5.titan\goworkerd.dll" "%SystemRoot%\System32"
 
+:: Start titan-edge daemon
+echo Starting titan-edge daemon...
+start cmd /k "titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0"
+
+:: Bind to Titan network
+echo Binding to Titan network...
+titan-edge bind --hash=C4D4CB1D-157B-4A88-A563-FB473E690968 https://api-test1.container1.titannet.io/api/v2/device/binding
+if %errorLevel% equ 0 (
+    echo Titan bind successful.
+) else (
+    echo Failed to bind to Titan network.
+)
+
+:: Configure titan-edge storage size
+echo Configuring titan-edge storage size...
+titan-edge config set --storage-size=50GB
+
+:: Install rClient.Setup.latest.exe silently
+echo Installing rClient.Setup.latest.exe...
+start /wait "" "%EXTRACT_DIR%\4.rivalz\rClient.Setup.latest.exe" /silent
+
+echo Installation complete.
 pause
-exit /b
+exit /B 0
