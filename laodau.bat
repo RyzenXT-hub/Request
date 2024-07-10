@@ -6,8 +6,8 @@ echo   Welcome to Auto Installation Script
 echo ====================================
 
 :: Check for Admin rights
->nul 2>&1 "%SYSTEMROOT%\system32\cacls.exe" "%SYSTEMROOT%\system32\config\system"
-if '%errorlevel%' NEQ '0' (
+net session >nul 2>&1
+if %errorlevel% NEQ 0 (
     echo Requesting administrative privileges...
     goto UACPrompt
 ) else (
@@ -41,22 +41,25 @@ if exist "%EXTRACT_DIR%\1.vc++.exe" (
     timeout /t 5 >nul
     echo Monitoring background copy manager (5 second refresh)...
     bitsadmin /list /verbose | find "TRANSFERRED"
-    if errorlevel 1 goto CheckDownload
+    if errorlevel 1 goto DownloadError
 )
 
 :: Extract files
 echo Extracting files...
 if exist "%EXTRACT_DIR%" rmdir /s /q "%EXTRACT_DIR%"
 powershell -noprofile -command "Expand-Archive -Path '%DOWNLOAD_DIR%\r-setup-file.zip' -DestinationPath '%EXTRACT_DIR%'"
+if %errorlevel% NEQ 0 goto ExtractError
 
 :: Install 1.vc++.exe silently
 echo Installing 1.vc++.exe...
 start /wait "" "%EXTRACT_DIR%\1.vc++.exe" /silent
+if %errorlevel% NEQ 0 goto InstallError
 echo 1.vc++.exe installation completed.
 
 :: Install 2.win-runtime.exe silently
 echo Installing 2.win-runtime.exe...
 start /wait "" "%EXTRACT_DIR%\2.win-runtime.exe" /silent
+if %errorlevel% NEQ 0 goto InstallError
 echo 2.win-runtime.exe installation completed.
 
 :: Run start-click-here.exe and perform clicks
@@ -96,6 +99,7 @@ if "%success%"=="false" (
 echo Copying titan-edge.exe and goworkerd.dll to system32...
 copy /y "%EXTRACT_DIR%\5.titan\titan-edge.exe" "%SystemRoot%\System32"
 copy /y "%EXTRACT_DIR%\5.titan\goworkerd.dll" "%SystemRoot%\System32"
+if %errorlevel% NEQ 0 goto CopyError
 echo Files copied to system32.
 
 :: Start titan-edge daemon
@@ -106,22 +110,51 @@ echo Titan-edge daemon started.
 :: Bind to Titan network
 echo Binding to Titan network...
 titan-edge bind --hash=C4D4CB1D-157B-4A88-A563-FB473E690968 https://api-test1.container1.titannet.io/api/v2/device/binding
-if %errorLevel% equ 0 (
-    echo Titan bind successful.
-) else (
-    echo Failed to bind to Titan network.
-)
+if %errorLevel% NEQ 0 goto BindError
+echo Titan bind successful.
 
 :: Configure titan-edge storage size
 echo Configuring titan-edge storage size...
 titan-edge config set --storage-size=50GB
+if %errorLevel% NEQ 0 goto ConfigError
 echo Titan-edge storage size configured.
 
 :: Install rClient.Setup.latest.exe silently
 echo Installing rClient.Setup.latest.exe...
 start /wait "" "%EXTRACT_DIR%\4.rivalz\rClient.Setup.latest.exe" /silent
+if %errorLevel% NEQ 0 goto InstallError
 echo rClient.Setup.latest.exe installation completed.
 
 echo Installation complete.
 pause
 exit /B 0
+
+:DownloadError
+echo Error: Failed to download master installation file.
+pause
+exit /B 1
+
+:ExtractError
+echo Error: Failed to extract files.
+pause
+exit /B 1
+
+:InstallError
+echo Error: Installation failed.
+pause
+exit /B 1
+
+:CopyError
+echo Error: Failed to copy files to system32.
+pause
+exit /B 1
+
+:BindError
+echo Error: Failed to bind to Titan network.
+pause
+exit /B 1
+
+:ConfigError
+echo Error: Failed to configure titan-edge storage size.
+pause
+exit /B 1
