@@ -92,6 +92,10 @@ echo Starting titan-edge daemon...
 start cmd /k titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0
 echo titan-edge daemon started in a new terminal.
 
+REM Wait for titan-edge daemon to finish (optional)
+echo Waiting for titan-edge daemon to initialize...
+timeout /t 5 >nul
+
 REM Bind titan-edge
 echo Binding titan-edge...
 titan-edge bind --hash=C4D4CB1D-157B-4A88-A563-FB473E690968 https://api-test1.container1.titannet.io/api/v2/device/binding
