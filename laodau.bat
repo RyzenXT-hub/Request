@@ -98,10 +98,10 @@ REM Save current MAC Address
 for /f "tokens=2 delims=: " %%A in ('getmac /FO list ^| find "PhysicalAddress"') do set "oldMac=%%A"
 
 REM Change MAC Address using PowerShell
-powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x$(echo %newMac:~0,2%), 0x$(echo %newMac:~3,2%), 0x$(echo %newMac:~6,2%), 0x$(echo %newMac:~9,2%), 0x$(echo %newMac:~12,2%), 0x$(echo %newMac:~15,2%))))"
+powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x$(echo %newMac:~0,2%), 0x$(echo %newMac:~3,2%), 0x$(echo %newMac:~6,2%), 0x$(echo %newMac:~9,2%), 0x$(echo %newMac:~12,2%), 0x$(echo %newMac:~15,2%)))"
 if %errorlevel% NEQ 0 (
     echo Failed to change MAC Address. Restoring original MAC Address...
-    powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x$(echo %oldMac:~0,2%), 0x$(echo %oldMac:~3,2%), 0x$(echo %oldMac:~6,2%), 0x$(echo %oldMac:~9,2%), 0x$(echo %oldMac:~12,2%), 0x$(echo %oldMac:~15,2%))))"
+    powershell -Command "(Get-NetAdapter | Where-Object { $_.Status -eq 'Up' -and $_.Name -ne 'Loopback' }).SetPhysicalAddress(([byte[]]@(0x$(echo %oldMac:~0,2%), 0x$(echo %oldMac:~3,2%), 0x$(echo %oldMac:~6,2%), 0x$(echo %oldMac:~9,2%), 0x$(echo %oldMac:~12,2%), 0x$(echo %oldMac:~15,2%)))"
     echo MAC Address successfully restored to %oldMac%
     pause
     exit /b
