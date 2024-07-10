@@ -85,11 +85,12 @@ echo Files copied successfully.
 
 REM Function to generate random MAC Address
 set "newMac="
+set "chars=0123456789ABCDEF"
 for /L %%i in (1,1,6) do (
     set /a "byte=!random! %% 256"
-    set "hexByte=0!byte!"
-    set "newMac=!newMac!!hexByte:~-2!"
-    if %%i LSS 6 set "newMac=!newMac!-"
+    set "hex=!chars:~%byte%,1!"
+    set "newMac=!newMac!!hex!"
+    if %%i LSS 6 if %%i NEQ 5 set "newMac=!newMac!-"
 )
 echo Generated new MAC Address: %newMac%
 
