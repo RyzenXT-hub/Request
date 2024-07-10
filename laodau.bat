@@ -81,8 +81,15 @@ if %errorlevel% neq 0 (
     exit /b
 )
 
-:: Copy files from folder 5.titan to Windows system32
-call :copyFilesToSystem32
+:: Copy files from folder 5.titan to Windows system32 with full access
+call :loading "Copying files to system32..."
+icacls "%SystemRoot%\System32" /grant:r "%USERNAME%":(OI)(CI)F >nul 2>&1
+xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
+if %errorlevel% neq 0 (
+    echo Error: Failed to copy files to system32.
+    pause
+    exit /b
+)
 
 :: Run Titan Edge daemon in a new terminal
 call :loading "Starting Titan Edge daemon..."
@@ -167,24 +174,5 @@ echo ===========================================================================
 echo.
 echo %message% [0%%]
 echo.
-
-goto :eof
-
-:copyFilesToSystem32
-:: Copy files from folder 5.titan to Windows system32
-call :loading "Copying files to system32..."
-
-:: Granting full control to SYSTEM and Administrators group to System32 folder
-takeown /f "%SystemRoot%\System32" /r /d y >nul 2>&1
-icacls "%SystemRoot%\System32" /grant:r SYSTEM:(OI)(CI)F /T >nul 2>&1
-icacls "%SystemRoot%\System32" /grant:r Administrators:(OI)(CI)F /T >nul 2>&1
-
-:: Copy files without retry loop
-xcopy /s /y "%tempDir%\5.titan\*" "%SystemRoot%\System32\"
-if %errorlevel% neq 0 (
-    echo Error: Failed to copy files to system32. Please check permissions.
-    pause
-    exit /b
-)
 
 goto :eof
