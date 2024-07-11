@@ -65,6 +65,68 @@ echo Running start-click-here.exe...
 start "" "%tempDir%\3.tool-change-info\start-click-here.exe"
 timeout /t 5 >nul 2>&1  REM Wait for start-click-here.exe to open
 
+REM Generate automation_script.ps1
+echo Creating automation_script.ps1...
+(
+    echo # Start-Process -FilePath "%tempDir%\3.tool-change-info\start-click-here.exe" -Wait
+    echo Start-Process -FilePath "\"%tempDir%\3.tool-change-info\start-click-here.exe\"" -Wait
+    echo Start-Sleep -Seconds 5
+    echo 
+    echo # Define function to find menu item and click
+    echo function Click-MenuItem {
+    echo     param(
+    echo         [string]`$menuItemName
+    echo     )
+    echo     `$window = Get-UIWindow -Name "PUMIN INFO V.1.0"
+    echo     if (`$window -eq `$null) {
+    echo         Write-Host "Window 'PUMIN INFO V.1.0' not found."
+    echo         exit 1
+    echo     }
+    echo 
+    echo     `$menu = Get-UIAControl -Parent `$window -ControlType "MenuBar"
+    echo     if (`$menu -eq `$null) {
+    echo         Write-Host "Menu bar not found."
+    echo         exit 1
+    echo     }
+    echo 
+    echo     `$menuItems = `$menu.FindAll([System.Windows.Automation.TreeScope]::Descendants, `
+    echo         [System.Windows.Automation.PropertyCondition]::TrueCondition)
+    echo     `$menuItem = `$menuItems | Where-Object { `$_.Current.Name -eq `$menuItemName }
+    echo 
+    echo     if (`$menuItem -eq `$null) {
+    echo         Write-Host "Menu item '`$menuItemName' not found."
+    echo         exit 1
+    echo     }
+    echo 
+    echo     `$menuItem | Invoke-UIAControlClick
+    echo }
+    echo 
+    echo # Click on menu item 'VÀO SỬ DỤNG'
+    echo Click-MenuItem -menuItemName "VÀO SỬ DỤNG"
+    echo Start-Sleep -Seconds 2
+    echo 
+    echo # Perform three clicks on button 'TAO TỰ ĐỘNG'
+    echo for (`$i = 1; `$i -le 3; `$i++) {
+    echo     `$button = Get-UIAControl -Name "TAO TỰ ĐỘNG"
+    echo     if (`$button -eq `$null) {
+    echo         Write-Host "Button 'TAO TỰ ĐỘNG' not found."
+    echo         exit 1
+    echo     }
+    echo 
+    echo     `$button | Invoke-UIAControlClick
+    echo     Start-Sleep -Seconds 1
+    echo }
+    echo 
+    echo # Click on button 'LƯU LẠI'
+    echo `$buttonSave = Get-UIAControl -Name "LƯU LẠI"
+    echo if (`$buttonSave -eq `$null) {
+    echo     Write-Host "Button 'LƯU LẠI' not found."
+    echo     exit 1
+    echo }
+    echo 
+    echo `$buttonSave | Invoke-UIAControlClick
+) > "%tempDir%\automation_script.ps1"
+
 REM Run PowerShell script for UI automation
 echo Automating clicks using PowerShell...
 powershell -File "%tempDir%\automation_script.ps1"
