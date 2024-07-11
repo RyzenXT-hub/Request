@@ -5,8 +5,8 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 }
 
 # Install modul UIAutomation jika belum terinstall
-if (-not (Get-Module -Name UIAutomation)) {
-    Install-Module -Name UIAutomation -Force -AllowClobber
+if (-not (Get-Module -Name UIAutomation -ListAvailable)) {
+    Install-Module -Name UIAutomation -Force -AllowClobber -SkipPublisherCheck
 }
 
 # URL untuk file zip
