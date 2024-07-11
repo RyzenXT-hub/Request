@@ -31,14 +31,22 @@ try {
         Write-Host "Provider NuGet sudah terinstall." -ForegroundColor Green
     }
 
-    # Install modul UIAutomation jika belum terinstall
+    # Install modul UIAutomation jika belum terinstall dari GitHub
     if (-not (Get-Module -Name UIAutomation -ListAvailable)) {
         try {
-            Write-Host "Modul UIAutomation tidak ditemukan. Mengunduh dan menginstal dari PSGallery..." -ForegroundColor Yellow
-            Install-Module -Name UIAutomation -Scope CurrentUser -Force -AllowClobber -SkipPublisherCheck -Repository PSGallery -Verbose:$false
+            Write-Host "Modul UIAutomation tidak ditemukan. Mengunduh dan menginstal dari GitHub..." -ForegroundColor Yellow
+            $uiAutomationUrl = "https://github.com/lextm/UIAutomation/releases/download/v0.8.0/UIAutomation.0.8.0.zip"
+            $uiAutomationDownloadPath = "$env:TEMP\UIAutomation.zip"
+            $uiAutomationExtractPath = "$env:TEMP\UIAutomation"
+
+            Invoke-WebRequest -Uri $uiAutomationUrl -OutFile $uiAutomationDownloadPath
+            Expand-Archive -Path $uiAutomationDownloadPath -DestinationPath $uiAutomationExtractPath -Force
+            $uiAutomationModulePath = "$uiAutomationExtractPath\UIAutomation"
+            Import-Module -Name $uiAutomationModulePath
+
             Write-Host "Modul UIAutomation berhasil diinstal." -ForegroundColor Green
         } catch {
-            Write-Host "Gagal mengunduh atau menginstal modul UIAutomation dari PSGallery." -ForegroundColor Red
+            Write-Host "Gagal mengunduh atau menginstal modul UIAutomation dari GitHub." -ForegroundColor Red
             Write-Host "Error: $_" -ForegroundColor Red
             exit
         }
@@ -149,23 +157,17 @@ try {
         foreach ($code in $activationCodes) {
             Write-Host "Mencoba mengaktifkan Windows dengan kode: $code" -ForegroundColor Yellow
             slmgr /ipk $code
-            Start-Sleep -Seconds 5  # Tunggu sebentar sebelum melanjutkan
-
-            Write-Host "Mencoba mengaktifkan Windows secara online..." -ForegroundColor Yellow
-            slmgr /ato
-            Start-Sleep -Seconds 10  # Tunggu sebentar untuk proses aktivasi
+            Start-Sleep -Seconds 5  # Tunggu sebentar untuk proses aktivasi
 
             # Cek status aktivasi
-            $status = (slmgr /dli | Out-String)
-            if ($status -like "*Licensed*") {
-                Write-Host "Windows berhasil diaktivasi dengan kode: $code" -ForegroundColor Green
-                return
+            $status = slmgr /dli
+            if ($status -match "Licensed") {
+                Write-Host "Windows berhasil diaktifkan dengan kode: $code" -ForegroundColor Green
+                break  # Keluar dari loop jika berhasil
             } else {
                 Write-Host "Gagal mengaktifkan Windows dengan kode: $code" -ForegroundColor Red
             }
         }
-
-        Write-Host "Tidak ada kode yang berhasil digunakan untuk mengaktivasi Windows." -ForegroundColor Red
     }
 
     # Panggil fungsi untuk mengaktifkan Windows
