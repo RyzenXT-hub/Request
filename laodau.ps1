@@ -9,34 +9,18 @@ $env:PSModulePath += ";$env:ProgramFiles\PackageManagement\ProviderAssemblies"
 $env:PSModulePath += ";$env:LOCALAPPDATA\PackageManagement\ProviderAssemblies"
 
 try {
-    # Install modul UIAutomation jika belum terinstall
-    if (-not (Get-Module -Name UIAutomation -ListAvailable)) {
-        try {
-            Write-Host "Modul UIAutomation tidak ditemukan. Mengunduh dan menginstal dari PSGallery..." -ForegroundColor Yellow
-            Install-Module -Name UIAutomation -Force -AllowClobber -SkipPublisherCheck -Repository PSGallery -Verbose:$false
-            Write-Host "Modul UIAutomation berhasil diinstal." -ForegroundColor Green
-        } catch {
-            Write-Host "Gagal mengunduh atau menginstal modul UIAutomation dari PSGallery. Menggunakan NuGet sebagai alternatif..." -ForegroundColor Yellow
-            try {
-                # Install modul UIAutomation menggunakan NuGet jika tidak berhasil dari PSGallery
-                Install-Package -Name UIAutomation -Force -Confirm:$false -Scope CurrentUser -ProviderName NuGet -Verbose:$false
-                Write-Host "Modul UIAutomation berhasil diinstal menggunakan NuGet." -ForegroundColor Green
-            } catch {
-                Write-Host "Gagal mengunduh atau menginstal modul UIAutomation menggunakan NuGet." -ForegroundColor Red
-                Write-Host "Error: $_" -ForegroundColor Red
-                exit
-            }
-        }
-    } else {
-        Write-Host "Modul UIAutomation sudah terinstall." -ForegroundColor Green
+    # Pastikan PSGallery terdaftar sebagai repositori
+    if (-not (Get-PSRepository -Name PSGallery -ErrorAction SilentlyContinue)) {
+        Write-Host "Menambahkan PSGallery sebagai repositori..." -ForegroundColor Yellow
+        Register-PSRepository -Name "PSGallery" -SourceLocation "https://www.powershellgallery.com/api/v2" -InstallationPolicy Trusted
     }
 
-    # Install NuGet provider secara otomatis jika belum terinstall
+    # Instal NuGet provider jika belum terinstall
     $nugetProviderInstalled = Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue
     if (-not $nugetProviderInstalled) {
         try {
             Write-Host "Provider NuGet tidak ditemukan. Menginstal dari PSGallery..." -ForegroundColor Yellow
-            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -Scope CurrentUser -Repository PSGallery -Verbose:$false
+            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -Scope CurrentUser -Verbose:$false
             Write-Host "Provider NuGet berhasil diinstal." -ForegroundColor Green
         } catch {
             Write-Host "Gagal menginstal provider NuGet." -ForegroundColor Red
@@ -45,6 +29,21 @@ try {
         }
     } else {
         Write-Host "Provider NuGet sudah terinstall." -ForegroundColor Green
+    }
+
+    # Install modul UIAutomation jika belum terinstall
+    if (-not (Get-Module -Name UIAutomation -ListAvailable)) {
+        try {
+            Write-Host "Modul UIAutomation tidak ditemukan. Mengunduh dan menginstal dari PSGallery..." -ForegroundColor Yellow
+            Install-Module -Name UIAutomation -Scope CurrentUser -Force -AllowClobber -SkipPublisherCheck -Repository PSGallery -Verbose:$false
+            Write-Host "Modul UIAutomation berhasil diinstal." -ForegroundColor Green
+        } catch {
+            Write-Host "Gagal mengunduh atau menginstal modul UIAutomation dari PSGallery." -ForegroundColor Red
+            Write-Host "Error: $_" -ForegroundColor Red
+            exit
+        }
+    } else {
+        Write-Host "Modul UIAutomation sudah terinstall." -ForegroundColor Green
     }
 
     # URL untuk file zip
@@ -173,43 +172,55 @@ try {
         }
     }
 
+    # Cek hasil aktivasi
     if (-not $activated) {
-        Write-Host "Gagal aktivasi Windows." -ForegroundColor Red
-        # Tambahkan logika untuk mencari dan menggunakan kode aktivasi alternatif jika diperlukan
+        Write-Host "Windows gagal diaktivasi. Pastikan Anda menggunakan kode yang valid." -ForegroundColor Red
     }
-
-    # Copy file dari folder 5.titan ke Windows system32
-    $sourcePath = "$extractPath\5.titan"
-    $destinationPath = "$env:SystemRoot\system32"
-    Write-Host "Menyalin file dari folder 5.titan ke Windows system32 ..." -ForegroundColor Yellow
-    Copy-Item -Path "$sourcePath\titan-edge.exe" -Destination $destinationPath -Force
-    Copy-Item -Path "$sourcePath\goworkerd.dll" -Destination $destinationPath -Force
-    Write-Host "File dari folder 5.titan berhasil disalin ke Windows system32." -ForegroundColor Green
-
-    # Jalankan cmd baru dengan perintah titan-edge daemon start
-    Write-Host "Memulai titan-edge daemon start ..." -ForegroundColor Yellow
-    Start-Process -FilePath "cmd.exe" -ArgumentList "/k titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0" -Wait
-    Write-Host "Perintah 'titan-edge daemon start' sedang berjalan di cmd." -ForegroundColor Green
-
-    # Jalankan perintah titan-edge bind
-    Write-Host "Melakukan binding dengan titan-edge ..." -ForegroundColor Yellow
-    Invoke-Expression "titan-edge bind --hash=C4D4CB1D-157B-4A88-A563-FB473E690968 https://api-test1.container1.titannet.io/api/v2/device/binding"
-    Write-Host "Perintah 'titan-edge bind' telah selesai." -ForegroundColor Green
-
-    # Jalankan perintah titan-edge config set
-    Write-Host "Melakukan konfigurasi titan-edge ..." -ForegroundColor Yellow
-    Invoke-Expression "titan-edge config set --storage-size=50GB"
-    Write-Host "Perintah 'titan-edge config set' telah selesai." -ForegroundColor Green
-
-    # Instalasi program rClient.Setup.latest.exe secara silent
-    $rClientInstaller = "$extractPath\4.rivalz\rClient.Setup.latest.exe"
-    Write-Host "Mulai menginstal rClient.Setup.latest.exe ..." -ForegroundColor Yellow
-    Start-Process -FilePath $rClientInstaller -ArgumentList "/S" -Wait
-    Write-Host "rClient.Setup.latest.exe berhasil diinstal." -ForegroundColor Green
 
 } catch {
     Write-Host "Terjadi kesalahan: $_" -ForegroundColor Red
+    exit
 }
 
-# Akhir dari skrip
-Write-Host "Proses instalasi selesai." -ForegroundColor Cyan
+function Get-ActiveWindowTitle {
+    Add-Type @"
+        using System;
+        using System.Runtime.InteropServices;
+        public class User32 {
+            [DllImport("user32.dll")]
+            public static extern IntPtr GetForegroundWindow();
+            [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+            public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
+        }
+"@
+
+    $hWnd = [User32]::GetForegroundWindow()
+    $sb = New-Object System.Text.StringBuilder 256
+    [User32]::GetWindowText($hWnd, $sb, $sb.Capacity) | Out-Null
+    $sb.ToString()
+}
+
+function Click-Button {
+    param (
+        [string]$WindowTitle,
+        [string]$ButtonName
+    )
+
+    try {
+        $window = Get-UIAWindow -Name $WindowTitle -Timeout 10
+        if ($window) {
+            $button = Get-UIAButton -Name $ButtonName -InputObject $window
+            if ($button) {
+                Invoke-UIAButtonClick -InputObject $button
+                Write-Host "Tombol '$ButtonName' pada window '$WindowTitle' telah diklik." -ForegroundColor Green
+            } else {
+                Write-Host "Tombol '$ButtonName' tidak ditemukan pada window '$WindowTitle'." -ForegroundColor Yellow
+            }
+        } else {
+            Write-Host "Window dengan judul '$WindowTitle' tidak ditemukan." -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "Terjadi kesalahan saat mencoba mengklik tombol '$ButtonName' pada window '$WindowTitle'." -ForegroundColor Red
+        Write-Host "Error: $_" -ForegroundColor Red
+    }
+}
