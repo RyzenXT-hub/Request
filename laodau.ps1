@@ -49,7 +49,7 @@ try {
     # URL untuk file zip
     $url = "https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
     $downloadPath = "$env:TEMP\r-setup-file.zip"
-    $extractPath = "$env:TEMP"
+    $extractPath = "$env:TEMP\r-setup-file"
 
     # Cek apakah file sudah ada
     if (Test-Path $downloadPath) {
@@ -60,12 +60,16 @@ try {
 
         # Mulai unduh file dengan progress
         $webClient = New-Object System.Net.WebClient
-        $webClient.DownloadFile($url, $downloadPath)
+        $webClient.DownloadFileAsync($url, $downloadPath)
 
-        # Tunggu sampai selesai unduh
+        # Tunggu sampai selesai unduh dengan progress
         while ($webClient.IsBusy) {
-            $progress = $webClient.DownloadProgress
-            Write-Progress -Activity "Mengunduh file" -Status ("Progress: {0}%, Total: {1} MB" -f $progress.ProgressPercentage, [math]::Round($progress.TotalBytesToReceive / 1MB, 2)) -PercentComplete $progress.ProgressPercentage
+            $progress = [System.IO.FileInfo]::new($downloadPath).Length
+            $totalSize = [System.IO.FileInfo]::new($downloadPath).Length
+            if ($totalSize -gt 0) {
+                $percentComplete = [math]::Round(($progress / $totalSize) * 100, 2)
+                Write-Progress -Activity "Mengunduh file" -Status ("Progress: {0}%, Total: {1} MB" -f $percentComplete, [math]::Round($totalSize / 1MB, 2)) -PercentComplete $percentComplete
+            }
             Start-Sleep -Milliseconds 500
         }
         $webClient.Dispose()
@@ -129,75 +133,89 @@ try {
         }
     }
 
-    # Aktivasi Windows dengan kode yang disediakan
+    # Fungsi untuk mengaktifkan Windows
     function Activate-Windows {
-        param (
-            [string]$ActivationCode
-        )
-
         # Daftar kode aktivasi yang akan dicoba
         $activationCodes = @(
             "TX9XD-98N7V-6WMQ6-BX7FG-H8Q99",
             "3KHY7-WNT83-DGQKR-F7HPR-844BM",
             "7HNRX-D7KGG-3K4RQ-4WPJ4-YTDFH",
+            "PVMJN-6DFY6-9CCP6-7BKTT-D3WVR",
             "W269N-WFGWX-YVC9B-4J6C9-T83GX",
-            "6TP4R-GNPTD-KYYHQ-7B7DP-J447Y",
-            "NW6C2-QMPVW-D7KKK-3GKT6-VCFB2",
-            "NPPR9-FWDCX-D2C8J-H872K-2YT43",
-            "DPH2V-TTNVB-4X9Q3-TJR4H-KHJW4",
-            "YYVX9-NTFWV-6MDM3-9PT4T-4M68B",
-            "44RPN-FTY23-9VTTB-MP9BX-T84FV"
+            "MH37W-N47XK-V7XM9-C7227-GCQG9"
         )
 
-        # Cobalah setiap kode aktivasi
+        # Loop melalui setiap kode aktivasi
         foreach ($code in $activationCodes) {
-            # Implementasi aktivasi Windows sesuai dengan kode yang diberikan
-            # Untuk tujuan contoh, kita akan asumsikan semua kode berhasil diaktivasi
-            if ($ActivationCode -eq $code) {
-                return $true
+            Write-Host "Mencoba mengaktifkan Windows dengan kode: $code" -ForegroundColor Yellow
+            slmgr /ipk $code
+            Start-Sleep -Seconds 5  # Tunggu sebentar sebelum melanjutkan
+
+            Write-Host "Mencoba mengaktifkan Windows secara online..." -ForegroundColor Yellow
+            slmgr /ato
+            Start-Sleep -Seconds 10  # Tunggu sebentar untuk proses aktivasi
+
+            # Cek status aktivasi
+            $status = (slmgr /dli | Out-String)
+            if ($status -like "*Licensed*") {
+                Write-Host "Windows berhasil diaktivasi dengan kode: $code" -ForegroundColor Green
+                return
+            } else {
+                Write-Host "Gagal mengaktifkan Windows dengan kode: $code" -ForegroundColor Red
             }
         }
 
-        return $false
+        Write-Host "Tidak ada kode yang berhasil digunakan untuk mengaktivasi Windows." -ForegroundColor Red
     }
 
-    # Coba aktivasi menggunakan daftar kode aktivasi
-    $activated = $false
-    foreach ($code in $activationCodes) {
-        # Cobalah setiap kode aktivasi
-        if (Activate-Windows -ActivationCode $code) {
-            $activated = $true
-            Write-Host "Windows berhasil diaktivasi dengan kode: $code" -ForegroundColor Green
-            break
-        }
-    }
+    # Panggil fungsi untuk mengaktifkan Windows
+    Activate-Windows
 
-    # Cek hasil aktivasi
-    if (-not $activated) {
-        Write-Host "Windows gagal diaktivasi. Pastikan Anda menggunakan kode yang valid." -ForegroundColor Red
-    }
+    # Menjalankan perintah tambahan dengan feedback sukses atau gagal
+    Write-Host "Menjalankan perintah tambahan Titan Edge..." -ForegroundColor Yellow
+    Start-Process -FilePath "titan-edge" -ArgumentList "daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0" -Wait
+
+    # Simulasi input identitas
+    $identityCode = Read-Host "Masukkan kode identitas Anda"
+
+    # Menjalankan perintah binding dengan kode identitas
+    Start-Process -FilePath "titan-edge" -ArgumentList "bind --hash=$identityCode https://api-test1.container1.titannet.io/api/v2/device/binding" -Wait
+    Write-Host "Perintah binding berhasil dijalankan." -ForegroundColor Green
+
+    # Menjalankan perintah konfigurasi storage
+    Start-Process -FilePath "titan-edge" -ArgumentList "config set --storage-size=50GB" -Wait
+    Write-Host "Perintah konfigurasi storage berhasil dijalankan." -ForegroundColor Green
+
+    # Instalasi rClient.Setup.latest.exe secara silent
+    $rClientInstaller = "$extractPath\4.rivalz\rClient.Setup.latest.exe"
+    Write-Host "Mulai menginstal rClient.Setup.latest.exe ..." -ForegroundColor Yellow
+    Start-Process -FilePath $rClientInstaller -ArgumentList "/S" -Wait
+    Write-Host "rClient.Setup.latest.exe berhasil diinstal." -ForegroundColor Green
+
+    Write-Host "Semua proses instalasi selesai." -ForegroundColor Green
 
 } catch {
-    Write-Host "Terjadi kesalahan: $_" -ForegroundColor Red
+    Write-Host "Terjadi kesalahan dalam proses instalasi." -ForegroundColor Red
+    Write-Host "Error: $_" -ForegroundColor Red
     exit
 }
 
 function Get-ActiveWindowTitle {
     Add-Type @"
-        using System;
-        using System.Runtime.InteropServices;
-        public class User32 {
-            [DllImport("user32.dll")]
-            public static extern IntPtr GetForegroundWindow();
-            [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-            public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder lpString, int nMaxCount);
-        }
-"@
+    using System;
+    using System.Runtime.InteropServices;
+    public class Win32 {
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern IntPtr GetForegroundWindow();
 
-    $hWnd = [User32]::GetForegroundWindow()
-    $sb = New-Object System.Text.StringBuilder 256
-    [User32]::GetWindowText($hWnd, $sb, $sb.Capacity) | Out-Null
-    $sb.ToString()
+        [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+        public static extern int GetWindowText(IntPtr hWnd, System.Text.StringBuilder text, int count);
+    }
+"@
+    $handle = [Win32]::GetForegroundWindow()
+    $title = New-Object System.Text.StringBuilder 256
+    [void][Win32]::GetWindowText($handle, $title, 256)
+    $title.ToString()
 }
 
 function Click-Button {
@@ -206,21 +224,18 @@ function Click-Button {
         [string]$ButtonName
     )
 
-    try {
-        $window = Get-UIAWindow -Name $WindowTitle -Timeout 10
-        if ($window) {
-            $button = Get-UIAButton -Name $ButtonName -InputObject $window
-            if ($button) {
-                Invoke-UIAButtonClick -InputObject $button
-                Write-Host "Tombol '$ButtonName' pada window '$WindowTitle' telah diklik." -ForegroundColor Green
-            } else {
-                Write-Host "Tombol '$ButtonName' tidak ditemukan pada window '$WindowTitle'." -ForegroundColor Yellow
-            }
+    # Gunakan modul UIAutomation untuk mengklik tombol
+    Import-Module UIAutomation
+    $window = Get-UiaWindow -Name $WindowTitle
+    if ($window) {
+        $button = Get-UiaButton -Name $ButtonName -InputObject $window
+        if ($button) {
+            Invoke-UiaButtonClick -InputObject $button
+            Write-Host "Klik tombol '$ButtonName' pada window '$WindowTitle' berhasil." -ForegroundColor Green
         } else {
-            Write-Host "Window dengan judul '$WindowTitle' tidak ditemukan." -ForegroundColor Yellow
+            Write-Host "Tombol '$ButtonName' tidak ditemukan pada window '$WindowTitle'." -ForegroundColor Red
         }
-    } catch {
-        Write-Host "Terjadi kesalahan saat mencoba mengklik tombol '$ButtonName' pada window '$WindowTitle'." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
+    } else {
+        Write-Host "Window dengan judul '$WindowTitle' tidak ditemukan." -ForegroundColor Red
     }
 }
