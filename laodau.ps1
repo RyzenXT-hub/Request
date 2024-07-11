@@ -10,7 +10,7 @@ if (-not (Get-Module -Name UIAutomation -ListAvailable)) {
 }
 
 # Install NuGet provider secara otomatis jika belum terinstall
-Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -Scope CurrentUser
 
 # URL untuk file zip
 $url = "https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
