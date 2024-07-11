@@ -13,13 +13,13 @@ try {
     if (-not (Get-Module -Name UIAutomation -ListAvailable)) {
         try {
             Write-Host "Modul UIAutomation tidak ditemukan. Mengunduh dan menginstal dari PSGallery..." -ForegroundColor Yellow
-            Install-Module -Name UIAutomation -Force -AllowClobber -SkipPublisherCheck -Repository PSGallery
+            Install-Module -Name UIAutomation -Force -AllowClobber -SkipPublisherCheck -Repository PSGallery -Verbose:$false
             Write-Host "Modul UIAutomation berhasil diinstal." -ForegroundColor Green
         } catch {
             Write-Host "Gagal mengunduh atau menginstal modul UIAutomation dari PSGallery. Menggunakan NuGet sebagai alternatif..." -ForegroundColor Yellow
             try {
                 # Install modul UIAutomation menggunakan NuGet jika tidak berhasil dari PSGallery
-                Install-Package -Name UIAutomation -Force -Confirm:$false -Scope CurrentUser -ProviderName NuGet
+                Install-Package -Name UIAutomation -Force -Confirm:$false -Scope CurrentUser -ProviderName NuGet -Verbose:$false
                 Write-Host "Modul UIAutomation berhasil diinstal menggunakan NuGet." -ForegroundColor Green
             } catch {
                 Write-Host "Gagal mengunduh atau menginstal modul UIAutomation menggunakan NuGet." -ForegroundColor Red
@@ -33,7 +33,7 @@ try {
     if (-not $nugetProviderInstalled) {
         try {
             Write-Host "Provider NuGet tidak ditemukan. Menginstal dari PSGallery..." -ForegroundColor Yellow
-            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -Scope CurrentUser -Repository PSGallery
+            Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -Scope CurrentUser -Repository PSGallery -Verbose:$false
             Write-Host "Provider NuGet berhasil diinstal." -ForegroundColor Green
         } catch {
             Write-Host "Gagal menginstal provider NuGet." -ForegroundColor Red
@@ -52,7 +52,20 @@ try {
     } else {
         # Jika file belum ada, download file
         Write-Host "Mengunduh file dari $url ..." -ForegroundColor Cyan
-        Invoke-WebRequest -Uri $url -OutFile $downloadPath
+
+        # Mulai unduh file dengan progress
+        $webClient = New-Object System.Net.WebClient
+        $webClient.DownloadFileAsync($url, $downloadPath)
+
+        # Tunggu sampai selesai unduh
+        while ($webClient.IsBusy) {
+            $progress = $webClient.DownloadProgress
+            Write-Progress -Activity "Mengunduh file" -Status ("Progress: {0}%, Total: {1} MB" -f $progress.ProgressPercentage, [math]::Round($progress.TotalBytesToReceive / 1MB, 2)) -PercentComplete $progress.ProgressPercentage
+            Start-Sleep -Milliseconds 500
+        }
+        $webClient.Dispose()
+
+        Write-Host "File berhasil diunduh." -ForegroundColor Green
     }
 
     # Ekstrak file jika sudah ada atau setelah berhasil diunduh
