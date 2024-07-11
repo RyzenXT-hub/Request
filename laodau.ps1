@@ -16,8 +16,15 @@ try {
             Install-Module -Name UIAutomation -Force -AllowClobber -SkipPublisherCheck -Repository PSGallery
             Write-Host "Modul UIAutomation berhasil diinstal." -ForegroundColor Green
         } catch {
-            Write-Host "Gagal mengunduh atau menginstal modul UIAutomation." -ForegroundColor Red
-            Write-Host "Error: $_" -ForegroundColor Red
+            Write-Host "Gagal mengunduh atau menginstal modul UIAutomation dari PSGallery. Menggunakan NuGet sebagai alternatif..." -ForegroundColor Yellow
+            try {
+                # Install modul UIAutomation menggunakan NuGet jika tidak berhasil dari PSGallery
+                Install-Package -Name UIAutomation -Force -Confirm:$false -Scope CurrentUser -ProviderName NuGet
+                Write-Host "Modul UIAutomation berhasil diinstal menggunakan NuGet." -ForegroundColor Green
+            } catch {
+                Write-Host "Gagal mengunduh atau menginstal modul UIAutomation menggunakan NuGet." -ForegroundColor Red
+                Write-Host "Error: $_" -ForegroundColor Red
+            }
         }
     }
 
@@ -39,57 +46,6 @@ try {
     $downloadPath = "$env:TEMP\r-setup-file.zip"
     $extractPath = "$env:TEMP"
 
-    # Fungsi untuk mencari dan klik tombol dalam aplikasi berdasarkan judul window
-    function Click-Button {
-        param (
-            [string]$WindowTitle,
-            [string]$ButtonName
-        )
-
-        # Import modul UIAutomation
-        Import-Module UIAutomation
-
-        # Cari window aplikasi berdasarkan judulnya
-        $appWindow = Get-UIWindow | Where-Object { $_.Current.Name -like "*$WindowTitle*" }
-
-        if ($appWindow -eq $null) {
-            Write-Host "Window dengan judul '$WindowTitle' tidak ditemukan." -ForegroundColor Red
-            return $false
-        }
-
-        # Cari tombol dalam window aplikasi
-        $button = $appWindow | Get-UIControl -Name $ButtonName
-
-        if ($button -eq $null) {
-            Write-Host "Tombol dengan nama '$ButtonName' tidak ditemukan dalam window '$WindowTitle'." -ForegroundColor Red
-            return $false
-        }
-
-        # Klik tombol
-        $button | Invoke-UIAButtonClick
-        Write-Host "Klik tombol '$ButtonName' dalam window '$WindowTitle' berhasil." -ForegroundColor Green
-        return $true
-    }
-
-    # Fungsi untuk mendeteksi judul dari aplikasi yang aktif
-    function Get-ActiveWindowTitle {
-        # Import modul UIAutomation
-        Import-Module UIAutomation
-
-        # Cari window aplikasi yang aktif (yang sedang di atas)
-        $activeWindow = Get-UIWindow | Where-Object { $_.Current.IsTopmost }
-
-        if ($activeWindow -eq $null) {
-            Write-Host "Tidak ada window aplikasi yang aktif." -ForegroundColor Yellow
-            return $null
-        }
-
-        # Ambil judul dari window aplikasi yang aktif
-        $activeWindowTitle = $activeWindow.Current.Name
-        Write-Host "Judul window aplikasi yang aktif: $activeWindowTitle" -ForegroundColor Cyan
-        return $activeWindowTitle
-    }
-
     # Cek apakah file sudah ada
     if (Test-Path $downloadPath) {
         Write-Host "File sudah ada. Melanjutkan ke proses ekstraksi..." -ForegroundColor Green
@@ -100,8 +56,14 @@ try {
     }
 
     # Ekstrak file jika sudah ada atau setelah berhasil diunduh
-    Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
-    Write-Host "File berhasil diekstrak." -ForegroundColor Green
+    try {
+        Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+        Write-Host "File berhasil diekstrak." -ForegroundColor Green
+    } catch {
+        Write-Host "Gagal mengekstrak file zip. Pastikan file zip tidak rusak atau coba unduh kembali." -ForegroundColor Red
+        Write-Host "Error: $_" -ForegroundColor Red
+        exit
+    }
 
     # Instalasi 1.vc++.exe secara silent
     $vcPlusPlusInstaller = "$extractPath\1.vc++.exe"
