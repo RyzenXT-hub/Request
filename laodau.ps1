@@ -9,6 +9,9 @@ if (-not (Get-Module -Name UIAutomation -ListAvailable)) {
     Install-Module -Name UIAutomation -Force -AllowClobber -SkipPublisherCheck
 }
 
+# Install NuGet provider secara otomatis jika belum terinstall
+Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
+
 # URL untuk file zip
 $url = "https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
 $downloadPath = "$env:TEMP\r-setup-file.zip"
@@ -66,11 +69,6 @@ function Get-ActiveWindowTitle {
 }
 
 try {
-    # Install NuGet provider secara otomatis jika belum terinstall
-    if (-not (Get-PackageProvider -Name NuGet -ErrorAction SilentlyContinue)) {
-        Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false
-    }
-
     # Cek apakah file sudah ada
     if (Test-Path $downloadPath) {
         Write-Host "File sudah ada. Melanjutkan ke proses ekstraksi..." -ForegroundColor Green
