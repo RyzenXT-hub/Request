@@ -140,46 +140,16 @@ try {
                 Start-Sleep -Seconds 2  # Tunggu sebentar sebelum klik tombol berikutnya
             }
 
-            # Klik tombol 'LƯU LẠI'
-            Click-Button -WindowTitle "PUMIN INFO V.1.0" -ButtonName "LƯU LẠI"
+            # Klik tombol 'LƯU' dan 'ĐÓNG'
+            Click-Button -WindowTitle "PUMIN INFO V.1.0" -ButtonName "LƯU"
+            Click-Button -WindowTitle "PUMIN INFO V.1.0" -ButtonName "ĐÓNG"
+
+            Write-Host "Skrip berhasil menyelesaikan proses pada aplikasi." -ForegroundColor Green
         }
-        default {
-            Write-Host "Tidak ada aksi yang diambil untuk judul window: $activeWindowTitle" -ForegroundColor Yellow
-        }
-    }
-
-    # Fungsi untuk mengaktifkan Windows
-    function Activate-Windows {
-        # Daftar kode aktivasi yang akan dicoba
-        $activationCodes = @(
-            "TX9XD-98N7V-6WMQ6-BX7FG-H8Q99",
-            "3KHY7-WNT83-DGQKR-F7HPR-844BM",
-            "7HNRX-D7KGG-3K4RQ-4WPJ4-YTDFH",
-            "PVMJN-6DFY6-9CCP6-7BKTT-D3WVR",
-            "W269N-WFGWX-YVC9B-4J6C9-T83GX",
-            "MH37W-N47XK-V7XM9-C7227-GCQG9"
-        )
-
-        # Loop melalui setiap kode untuk mencoba mengaktifkan Windows
-        foreach ($code in $activationCodes) {
-            Write-Host "Mencoba mengaktifkan Windows dengan kode: $code" -ForegroundColor Yellow
-            # Jalankan perintah untuk mengaktifkan Windows
-            $result = slmgr /ipk $code
-            Start-Sleep -Seconds 2  # Tunggu sebentar untuk proses aktivasi
-
-            # Cek status aktivasi
-            $status = slmgr /dli
-            if ($status -match "Licensed") {
-                Write-Host "Windows berhasil diaktifkan dengan kode: $code" -ForegroundColor Green
-                break  # Keluar dari loop jika berhasil
-            } else {
-                Write-Host "Gagal mengaktifkan Windows dengan kode: $code" -ForegroundColor Red
-            }
+        Default {
+            Write-Host "Window dengan judul '$activeWindowTitle' tidak dikenali." -ForegroundColor Red
         }
     }
-
-    # Panggil fungsi untuk mengaktifkan Windows
-    Activate-Windows
 
     # Menjalankan perintah tambahan dengan feedback sukses atau gagal
     Write-Host "Menjalankan perintah tambahan Titan Edge..." -ForegroundColor Yellow
