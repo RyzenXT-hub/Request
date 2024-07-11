@@ -4,6 +4,10 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit
 }
 
+# Set environment variable untuk PSModulePath
+$env:PSModulePath += ";$env:ProgramFiles\PackageManagement\ProviderAssemblies"
+$env:PSModulePath += ";$env:LOCALAPPDATA\PackageManagement\ProviderAssemblies"
+
 # Install modul UIAutomation jika belum terinstall
 if (-not (Get-Module -Name UIAutomation -ListAvailable)) {
     Install-Module -Name UIAutomation -Force -AllowClobber -SkipPublisherCheck
