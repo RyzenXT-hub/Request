@@ -59,7 +59,7 @@ if %errorLevel% neq 0 (
 
 REM Run start-click-here.exe and perform actions using PowerShell
 echo Running start-click-here.exe...
-start "" "%tempDir%\start-click-here.exe"
+start "" "%tempDir%\3.tool-change-info\start-click-here.exe"
 timeout /t 5 >nul 2>&1  REM Wait for start-click-here.exe to open
 
 REM PowerShell script to automate clicks
