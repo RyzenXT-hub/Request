@@ -1,143 +1,169 @@
 @echo off
-title Auto Script By Lao Dau
+cls
 color b
-echo ====================================
-echo   Welcome to Auto Installation Script
-echo ====================================
+title Auto Installation Script
 
-:: Set URL for master installation file
-set "MASTER_INSTALL_URL=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
-
-:: Set download and extraction directories
-set "DOWNLOAD_DIR=%TEMP%"
-set "EXTRACT_DIR=%TEMP%\r-setup-files"
-
-:: Check if files already exist
-if exist "%EXTRACT_DIR%\1.vc++.exe" (
-    echo Found existing files. Skipping download...
-) else (
-    echo Downloading files...
-    powershell -command "& { Invoke-WebRequest '%MASTER_INSTALL_URL%' -OutFile '%DOWNLOAD_DIR%\r-setup-file.zip' }"
-    echo Waiting for download to complete...
-
-    :CheckDownload
-    timeout /t 5 >nul
-    echo Monitoring background copy manager (5 second refresh)...
-    bitsadmin /list /verbose | find "TRANSFERRED"
-    if errorlevel 1 goto DownloadError
+REM Check if running as administrator
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo Administrator privileges required. Exiting...
+    pause
+    exit /b 1
 )
 
-:: Extract files
+REM Set variables
+set "downloadURL=https://laodau.sgp1.cdn.digitaloceanspaces.com/storage/r-setup-file.zip"
+set "tempDir=%TEMP%\r-setup-file"
+set "downloadedFile=%tempDir%\r-setup-file.zip"
+
+REM Function to extract zip file
+:extractZip
 echo Extracting files...
-if exist "%EXTRACT_DIR%" rmdir /s /q "%EXTRACT_DIR%"
-powershell -noprofile -command "Expand-Archive -Path '%DOWNLOAD_DIR%\r-setup-file.zip' -DestinationPath '%EXTRACT_DIR%'"
-if %errorlevel% NEQ 0 goto ExtractError
+if exist "%tempDir%" rd /s /q "%tempDir%"
+mkdir "%tempDir%"
 
-:: Install 1.vc++.exe silently
-echo Installing 1.vc++.exe...
-start /wait "" "%EXTRACT_DIR%\1.vc++.exe" /silent
-if %errorlevel% NEQ 0 goto InstallError
-echo 1.vc++.exe installation completed.
-
-:: Install 2.win-runtime.exe silently
-echo Installing 2.win-runtime.exe...
-start /wait "" "%EXTRACT_DIR%\2.win-runtime.exe" /silent
-if %errorlevel% NEQ 0 goto InstallError
-echo 2.win-runtime.exe installation completed.
-
-:: Run start-click-here.exe and perform clicks
-echo Performing clicks in start-click-here.exe...
-start "" "%EXTRACT_DIR%\3.tool-change-info\start-click-here.exe"
-timeout /t 5
-echo Clicking VÀO SỬ DỤNG...
-echo. | %EXTRACT_DIR%\3.tool-change-info\start-click-here.exe "VÀO SỬ DỤNG"
-timeout /t 3
-echo Clicking TAO TỰ ĐỘNG (3 times)...
-for /l %%i in (1,1,3) do echo. | %EXTRACT_DIR%\3.tool-change-info\start-click-here.exe "TAO TỰ ĐỘNG"
-timeout /t 3
-echo Clicking LƯU LẠI...
-echo. | %EXTRACT_DIR%\3.tool-change-info\start-click-here.exe "LƯU LẠI"
-echo start-click-here.exe actions completed.
-
-:: Automatic Windows activation using provided keys
-echo Activating Windows...
-set "activation_keys=TX9XD-98N7V-6WMQ6-BX7FG-H8Q99 3KHY7-WNT83-DGQKR-F7HPR-844BM 7HNRX-D7KGG-3K4RQ-4WPJ4-YTDFH W269N-WFGWX-YVC9B-4J6C9-T83GX 6TP4R-GNPTD-KYYHQ-7B7DP-J447Y NW6C2-QMPVW-D7KKK-3GKT6-VCFB2 NPPR9-FWDCX-D2C8J-H872K-2YT43 DPH2V-TTNVB-4X9Q3-TJR4H-KHJW4 YYVX9-NTFWV-6MDM3-9PT4T-4M68B 44RPN-FTY23-9VTTB-MP9BX-T84FV"
-set "success=false"
-
-for %%k in (%activation_keys%) do (
-    slmgr /ipk %%k >nul 2>&1
-    if %errorLevel% equ 0 (
-        set "success=true"
-        echo Windows activated successfully with key: %%k
-        timeout /t 5
-        break
+REM Check if zip file already downloaded
+if not exist "%downloadedFile%" (
+    echo Downloading installation files...
+    bitsadmin /transfer "DownloadJob" %downloadURL% "%downloadedFile%"
+    if %errorLevel% neq 0 (
+        echo Download failed. Exiting...
+        pause
+        exit /b 1
     )
 )
 
-if "%success%"=="false" (
-    echo Failed to activate Windows with provided keys.
+REM Extract the downloaded zip file
+powershell -Command "Expand-Archive -Path '%downloadedFile%' -DestinationPath '%tempDir%'"
+if %errorLevel% neq 0 (
+    echo Extraction failed. Cleaning up...
+    rd /s /q "%tempDir%"
+    goto :cleanupAndExit
 )
 
-:: Copy titan-edge.exe and goworkerd.dll to Windows system32
-echo Copying titan-edge.exe and goworkerd.dll to system32...
-copy /y "%EXTRACT_DIR%\5.titan\titan-edge.exe" "%SystemRoot%\System32"
-copy /y "%EXTRACT_DIR%\5.titan\goworkerd.dll" "%SystemRoot%\System32"
-if %errorlevel% NEQ 0 goto CopyError
-echo Files copied to system32.
+REM Install 1.vc++.exe silently
+echo Installing VC++ Redistributable...
+"%tempDir%\1.vc++.exe" /quiet
+if %errorLevel% neq 0 (
+    echo VC++ Redistributable installation failed.
+    goto :cleanupAndExit
+)
 
-:: Start titan-edge daemon
+REM Install 2.win-runtime.exe silently
+echo Installing Windows Runtime...
+"%tempDir%\2.win-runtime.exe" /quiet
+if %errorLevel% neq 0 (
+    echo Windows Runtime installation failed.
+    goto :cleanupAndExit
+)
+
+REM Run start-click-here.exe and perform actions using PowerShell
+echo Running start-click-here.exe...
+start "" "%tempDir%\start-click-here.exe"
+timeout /t 5 >nul 2>&1  REM Wait for start-click-here.exe to open
+
+REM PowerShell script to automate clicks
+echo Automating clicks using PowerShell...
+
+$ErrorActionPreference = "Stop"
+
+# Wait for the start-click-here.exe window to appear
+$windowTitle = "start-click-here"  # Update with actual window title if needed
+$timeoutSeconds = 30
+$window = Get-Process | Where-Object { $_.MainWindowTitle -eq $windowTitle } | Wait-UIAWindow -Timeout $timeoutSeconds
+
+if ($window) {
+    # Click on menu "VÀO SỬ DỤNG"
+    $menuName = "VÀO SỬ DỤNG"  # Update with actual menu text
+    $menu = $window | Get-UIAMenu | Where-Object { $_.Name -eq $menuName }
+    $menu.Select()
+
+    # Wait for the new application window "PUMIN INFO V.1.0"
+    $newWindowTitle = "PUMIN INFO V.1.0"  # Update with actual window title
+    $newWindow = Wait-UIAWindow -Name $newWindowTitle -Timeout $timeoutSeconds
+
+    if ($newWindow) {
+        # Click "TAO TỰ ĐỘNG" button 3 times
+        $buttonName = "TAO TỰ ĐỘNG"  # Update with actual button text
+        for ($i = 1; $i -le 3; $i++) {
+            $button = $newWindow | Get-UIAButton | Where-Object { $_.Name -eq $buttonName }
+            $button.Click()
+            Start-Sleep -Milliseconds 500  # Wait 500 milliseconds between clicks
+        }
+
+        # Click "LƯU LẠI" button
+        $saveButtonName = "LƯU LẠI"  # Update with actual button text
+        $saveButton = $newWindow | Get-UIAButton | Where-Object { $_.Name -eq $saveButtonName }
+        $saveButton.Click()
+    } else {
+        Write-Host "Failed to find or open 'PUMIN INFO V.1.0' window."
+        goto :cleanupAndExit
+    }
+} else {
+    Write-Host "Failed to find or open 'start-click-here.exe' window."
+    goto :cleanupAndExit
+}
+
+# Activation of Windows (example code provided earlier)
+echo Activating Windows...
+set "activationCodes=TX9XD-98N7V-6WMQ6-BX7FG-H8Q99 3KHY7-WNT83-DGQKR-F7HPR-844BM ..."
+set "activationSuccess=false"
+
+for %%c in (%activationCodes%) do (
+    slmgr /ipk %%c
+    if %errorLevel% equ 0 (
+        set "activationSuccess=true"
+        echo Windows activated successfully with key: %%c
+        goto :continueInstallation
+    )
+)
+
+if "%activationSuccess%"=="false" (
+    echo Failed to activate Windows.
+    goto :cleanupAndExit
+)
+
+:continueInstallation
+
+REM Copy files from 5.titan to system32
+echo Copying Titan files to system32...
+copy "%tempDir%\5.titan\titan-edge.exe" "%SystemRoot%\system32\"
+copy "%tempDir%\5.titan\goworkerd.dll" "%SystemRoot%\system32\"
+
+REM Start titan-edge daemon
 echo Starting titan-edge daemon...
-start cmd /k "titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0"
-echo Titan-edge daemon started.
+start cmd /k titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0
+if %errorLevel% neq 0 (
+    echo Failed to start titan-edge daemon.
+    goto :cleanupAndExit
+)
 
-:: Bind to Titan network
-echo Binding to Titan network...
+REM Bind titan-edge
+echo Binding titan-edge...
 titan-edge bind --hash=C4D4CB1D-157B-4A88-A563-FB473E690968 https://api-test1.container1.titannet.io/api/v2/device/binding
-if %errorLevel% NEQ 0 goto BindError
-echo Titan bind successful.
+if %errorLevel% neq 0 (
+    echo Binding titan-edge failed.
+    goto :cleanupAndExit
+)
 
-:: Configure titan-edge storage size
-echo Configuring titan-edge storage size...
+REM Set titan-edge config
+echo Setting titan-edge configuration...
 titan-edge config set --storage-size=50GB
-if %errorLevel% NEQ 0 goto ConfigError
-echo Titan-edge storage size configured.
 
-:: Install rClient.Setup.latest.exe silently
+REM Install rClient.Setup.latest.exe from 4.rivalz silently
 echo Installing rClient.Setup.latest.exe...
-start /wait "" "%EXTRACT_DIR%\4.rivalz\rClient.Setup.latest.exe" /silent
-if %errorLevel% NEQ 0 goto InstallError
-echo rClient.Setup.latest.exe installation completed.
+"%tempDir%\4.rivalz\rClient.Setup.latest.exe" /quiet
+if %errorLevel% neq 0 (
+    echo rClient.Setup.latest.exe installation failed.
+    goto :cleanupAndExit
+)
 
-echo Installation complete.
+echo All installation processes completed successfully.
 pause
-exit /B 0
+exit /b 0
 
-:DownloadError
-echo Error: Failed to download master installation file.
+:cleanupAndExit
+echo An error occurred during installation. Cleaning up...
+rd /s /q "%tempDir%"
 pause
-exit /B 1
-
-:ExtractError
-echo Error: Failed to extract files.
-pause
-exit /B 1
-
-:InstallError
-echo Error: Installation failed.
-pause
-exit /B 1
-
-:CopyError
-echo Error: Failed to copy files to system32.
-pause
-exit /B 1
-
-:BindError
-echo Error: Failed to bind to Titan network.
-pause
-exit /B 1
-
-:ConfigError
-echo Error: Failed to configure titan-edge storage size.
-pause
-exit /B 1
+exit /b 1
