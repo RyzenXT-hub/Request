@@ -22,8 +22,9 @@ echo Extracting files...
 if exist "%tempDir%" rd /s /q "%tempDir%"
 mkdir "%tempDir%"
 
-REM Check if zip file already downloaded
+REM Check if zip file already exists
 if not exist "%downloadedFile%" (
+    REM Download installation files only if zip file does not exist
     echo Downloading installation files...
     bitsadmin /transfer "DownloadJob" %downloadURL% "%downloadedFile%"
     if %errorLevel% neq 0 (
@@ -31,6 +32,8 @@ if not exist "%downloadedFile%" (
         pause
         exit /b 1
     )
+) else (
+    echo Installation files already downloaded. Skipping download.
 )
 
 REM Extract the downloaded zip file
