@@ -23,9 +23,7 @@ try {
             Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force -Confirm:$false -Scope CurrentUser -Verbose:$false
             Write-Host "Provider NuGet berhasil diinstal." -ForegroundColor Green
         } catch {
-            Write-Host "Gagal menginstal provider NuGet." -ForegroundColor Red
-            Write-Host "Error: $_" -ForegroundColor Red
-            exit
+            throw "Gagal menginstal provider NuGet."
         }
     } else {
         Write-Host "Provider NuGet sudah terinstall." -ForegroundColor Green
@@ -53,9 +51,7 @@ try {
 
             Write-Host "Modul UIAutomation berhasil diinstal." -ForegroundColor Green
         } catch {
-            Write-Host "Gagal mengunduh atau menginstal modul UIAutomation dari GitHub." -ForegroundColor Red
-            Write-Host "Error: $_" -ForegroundColor Red
-            exit
+            throw "Gagal mengunduh atau menginstal modul UIAutomation dari GitHub."
         }
     } else {
         Write-Host "Modul UIAutomation sudah terinstall." -ForegroundColor Green
@@ -97,9 +93,7 @@ try {
         Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
         Write-Host "File berhasil diekstrak." -ForegroundColor Green
     } catch {
-        Write-Host "Gagal mengekstrak file zip. Pastikan file zip tidak rusak atau coba unduh kembali." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-        exit
+        throw "Gagal mengekstrak file zip."
     }
 
     # Instalasi 1.vc++.exe secara silent
