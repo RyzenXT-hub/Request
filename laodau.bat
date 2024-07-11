@@ -57,54 +57,16 @@ if %errorLevel% neq 0 (
     goto :cleanupAndExit
 )
 
-REM Run start-click-here.exe and perform actions using PowerShell
+REM Run start-click-here.exe
 echo Running start-click-here.exe...
 start "" "%tempDir%\3.tool-change-info\start-click-here.exe"
 timeout /t 5 >nul 2>&1  REM Wait for start-click-here.exe to open
 
-REM PowerShell script to automate clicks
+REM Run PowerShell script for UI automation
 echo Automating clicks using PowerShell...
+powershell -File "%tempDir%\automation_script.ps1"
 
-$ErrorActionPreference = "Stop"
-
-# Wait for the start-click-here.exe window to appear
-$windowTitle = "start-click-here"  # Update with actual window title if needed
-$timeoutSeconds = 30
-$window = Get-Process | Where-Object { $_.MainWindowTitle -eq $windowTitle } | Wait-UIAWindow -Timeout $timeoutSeconds
-
-if ($window) {
-    # Click on menu "VÀO SỬ DỤNG"
-    $menuName = "VÀO SỬ DỤNG"  # Update with actual menu text
-    $menu = $window | Get-UIAMenu | Where-Object { $_.Name -eq $menuName }
-    $menu.Select()
-
-    # Wait for the new application window "PUMIN INFO V.1.0"
-    $newWindowTitle = "PUMIN INFO V.1.0"  # Update with actual window title
-    $newWindow = Wait-UIAWindow -Name $newWindowTitle -Timeout $timeoutSeconds
-
-    if ($newWindow) {
-        # Click "TAO TỰ ĐỘNG" button 3 times
-        $buttonName = "TAO TỰ ĐỘNG"  # Update with actual button text
-        for ($i = 1; $i -le 3; $i++) {
-            $button = $newWindow | Get-UIAButton | Where-Object { $_.Name -eq $buttonName }
-            $button.Click()
-            Start-Sleep -Milliseconds 500  # Wait 500 milliseconds between clicks
-        }
-
-        # Click "LƯU LẠI" button
-        $saveButtonName = "LƯU LẠI"  # Update with actual button text
-        $saveButton = $newWindow | Get-UIAButton | Where-Object { $_.Name -eq $saveButtonName }
-        $saveButton.Click()
-    } else {
-        Write-Host "Failed to find or open 'PUMIN INFO V.1.0' window."
-        goto :cleanupAndExit
-    }
-} else {
-    Write-Host "Failed to find or open 'start-click-here.exe' window."
-    goto :cleanupAndExit
-}
-
-# Activation of Windows (example code provided earlier)
+REM Activation of Windows (example code provided earlier)
 echo Activating Windows...
 set "activationCodes=TX9XD-98N7V-6WMQ6-BX7FG-H8Q99 3KHY7-WNT83-DGQKR-F7HPR-844BM ..."
 set "activationSuccess=false"
