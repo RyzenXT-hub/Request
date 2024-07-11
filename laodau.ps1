@@ -24,8 +24,11 @@ try {
             } catch {
                 Write-Host "Gagal mengunduh atau menginstal modul UIAutomation menggunakan NuGet." -ForegroundColor Red
                 Write-Host "Error: $_" -ForegroundColor Red
+                exit
             }
         }
+    } else {
+        Write-Host "Modul UIAutomation sudah terinstall." -ForegroundColor Green
     }
 
     # Install NuGet provider secara otomatis jika belum terinstall
@@ -38,7 +41,10 @@ try {
         } catch {
             Write-Host "Gagal menginstal provider NuGet." -ForegroundColor Red
             Write-Host "Error: $_" -ForegroundColor Red
+            exit
         }
+    } else {
+        Write-Host "Provider NuGet sudah terinstall." -ForegroundColor Green
     }
 
     # URL untuk file zip
@@ -55,7 +61,7 @@ try {
 
         # Mulai unduh file dengan progress
         $webClient = New-Object System.Net.WebClient
-        $webClient.DownloadFileAsync($url, $downloadPath)
+        $webClient.DownloadFile($url, $downloadPath)
 
         # Tunggu sampai selesai unduh
         while ($webClient.IsBusy) {
