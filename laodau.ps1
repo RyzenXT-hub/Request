@@ -39,9 +39,16 @@ try {
             $uiAutomationDownloadPath = "$env:TEMP\UIAutomation.zip"
             $uiAutomationExtractPath = "$env:TEMP\UIAutomation"
 
+            # Unduh file UIAutomation
             Invoke-WebRequest -Uri $uiAutomationUrl -OutFile $uiAutomationDownloadPath
+
+            # Ekstrak file UIAutomation
             Expand-Archive -Path $uiAutomationDownloadPath -DestinationPath $uiAutomationExtractPath -Force
+
+            # Set path untuk modul UIAutomation
             $uiAutomationModulePath = "$uiAutomationExtractPath\UIAutomation"
+
+            # Impor modul UIAutomation
             Import-Module -Name $uiAutomationModulePath
 
             Write-Host "Modul UIAutomation berhasil diinstal." -ForegroundColor Green
@@ -153,11 +160,12 @@ try {
             "MH37W-N47XK-V7XM9-C7227-GCQG9"
         )
 
-        # Loop melalui setiap kode aktivasi
+        # Loop melalui setiap kode untuk mencoba mengaktifkan Windows
         foreach ($code in $activationCodes) {
             Write-Host "Mencoba mengaktifkan Windows dengan kode: $code" -ForegroundColor Yellow
-            slmgr /ipk $code
-            Start-Sleep -Seconds 5  # Tunggu sebentar untuk proses aktivasi
+            # Jalankan perintah untuk mengaktifkan Windows
+            $result = slmgr /ipk $code
+            Start-Sleep -Seconds 2  # Tunggu sebentar untuk proses aktivasi
 
             # Cek status aktivasi
             $status = slmgr /dli
