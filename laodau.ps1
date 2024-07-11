@@ -95,58 +95,30 @@ try {
         Write-Host "File sudah ada. Melanjutkan ke proses ekstraksi..." -ForegroundColor Green
     } else {
         # Jika file belum ada, download file
-        try {
-            Write-Host "Mengunduh file dari $url ..." -ForegroundColor Cyan
-            Invoke-WebRequest -Uri $url -OutFile $downloadPath
-        } catch {
-            Write-Host "Gagal mengunduh file dari $url." -ForegroundColor Red
-            Write-Host "Error: $_" -ForegroundColor Red
-            exit
-        }
+        Write-Host "Mengunduh file dari $url ..." -ForegroundColor Cyan
+        Invoke-WebRequest -Uri $url -OutFile $downloadPath
     }
 
     # Ekstrak file jika sudah ada atau setelah berhasil diunduh
-    try {
-        Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
-        Write-Host "File berhasil diekstrak." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal mengekstrak file." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-        exit
-    }
+    Expand-Archive -Path $downloadPath -DestinationPath $extractPath -Force
+    Write-Host "File berhasil diekstrak." -ForegroundColor Green
 
     # Instalasi 1.vc++.exe secara silent
     $vcPlusPlusInstaller = "$extractPath\1.vc++.exe"
     Write-Host "Mulai menginstal 1.vc++.exe ..." -ForegroundColor Yellow
-    try {
-        Start-Process -FilePath $vcPlusPlusInstaller -ArgumentList "/S" -Wait
-        Write-Host "1.vc++.exe berhasil diinstal." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal menginstal 1.vc++.exe." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
+    Start-Process -FilePath $vcPlusPlusInstaller -ArgumentList "/S" -Wait
+    Write-Host "1.vc++.exe berhasil diinstal." -ForegroundColor Green
 
     # Instalasi 2.win-runtime.exe secara silent
     $winRuntimeInstaller = "$extractPath\2.win-runtime.exe"
     Write-Host "Mulai menginstal 2.win-runtime.exe ..." -ForegroundColor Yellow
-    try {
-        Start-Process -FilePath $winRuntimeInstaller -ArgumentList "/S" -Wait
-        Write-Host "2.win-runtime.exe berhasil diinstal." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal menginstal 2.win-runtime.exe." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
+    Start-Process -FilePath $winRuntimeInstaller -ArgumentList "/S" -Wait
+    Write-Host "2.win-runtime.exe berhasil diinstal." -ForegroundColor Green
 
     # Jalankan start-click-here.exe dan tunggu hingga selesai
     $startClickHere = "$extractPath\start-click-here.exe"
-    Write-Host "Memulai start-click-here.exe ..." -ForegroundColor Yellow
-    try {
-        Start-Process -FilePath $startClickHere -Wait
-        Write-Host "Aplikasi start-click-here.exe telah selesai dijalankan." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal menjalankan start-click-here.exe." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
+    Start-Process -FilePath $startClickHere -Wait
+    Write-Host "Aplikasi start-click-here.exe telah selesai dijalankan." -ForegroundColor Green
 
     # Tunggu sebentar untuk aplikasi baru muncul
     Start-Sleep -Seconds 5
@@ -229,55 +201,30 @@ try {
     $sourcePath = "$extractPath\5.titan"
     $destinationPath = "$env:SystemRoot\system32"
     Write-Host "Menyalin file dari folder 5.titan ke Windows system32 ..." -ForegroundColor Yellow
-    try {
-        Copy-Item -Path "$sourcePath\titan-edge.exe" -Destination $destinationPath -Force
-        Copy-Item -Path "$sourcePath\goworkerd.dll" -Destination $destinationPath -Force
-        Write-Host "File dari folder 5.titan berhasil disalin ke Windows system32." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal menyalin file dari folder 5.titan ke Windows system32." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
+    Copy-Item -Path "$sourcePath\titan-edge.exe" -Destination $destinationPath -Force
+    Copy-Item -Path "$sourcePath\goworkerd.dll" -Destination $destinationPath -Force
+    Write-Host "File dari folder 5.titan berhasil disalin ke Windows system32." -ForegroundColor Green
 
     # Jalankan cmd baru dengan perintah titan-edge daemon start
     Write-Host "Memulai titan-edge daemon start ..." -ForegroundColor Yellow
-    try {
-        Start-Process -FilePath "cmd.exe" -ArgumentList "/k titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0" -Wait
-        Write-Host "Perintah 'titan-edge daemon start' sedang berjalan di cmd." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal menjalankan perintah 'titan-edge daemon start' di cmd." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
+    Start-Process -FilePath "cmd.exe" -ArgumentList "/k titan-edge daemon start --init --url https://cassini-locator.titannet.io:5000/rpc/v0" -Wait
+    Write-Host "Perintah 'titan-edge daemon start' sedang berjalan di cmd." -ForegroundColor Green
 
     # Jalankan perintah titan-edge bind
     Write-Host "Melakukan binding dengan titan-edge ..." -ForegroundColor Yellow
-    try {
-        Invoke-Expression "titan-edge bind --hash=C4D4CB1D-157B-4A88-A563-FB473E690968 https://api-test1.container1.titannet.io/api/v2/device/binding"
-        Write-Host "Perintah 'titan-edge bind' telah selesai." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal menjalankan perintah 'titan-edge bind'." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
+    Invoke-Expression "titan-edge bind --hash=C4D4CB1D-157B-4A88-A563-FB473E690968 https://api-test1.container1.titannet.io/api/v2/device/binding"
+    Write-Host "Perintah 'titan-edge bind' telah selesai." -ForegroundColor Green
 
     # Jalankan perintah titan-edge config set
     Write-Host "Melakukan konfigurasi titan-edge ..." -ForegroundColor Yellow
-    try {
-        Invoke-Expression "titan-edge config set --storage-size=50GB"
-        Write-Host "Perintah 'titan-edge config set' telah selesai." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal menjalankan perintah 'titan-edge config set'." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
+    Invoke-Expression "titan-edge config set --storage-size=50GB"
+    Write-Host "Perintah 'titan-edge config set' telah selesai." -ForegroundColor Green
 
     # Instalasi program rClient.Setup.latest.exe secara silent
     $rClientInstaller = "$extractPath\4.rivalz\rClient.Setup.latest.exe"
     Write-Host "Mulai menginstal rClient.Setup.latest.exe ..." -ForegroundColor Yellow
-    try {
-        Start-Process -FilePath $rClientInstaller -ArgumentList "/S" -Wait
-        Write-Host "rClient.Setup.latest.exe berhasil diinstal." -ForegroundColor Green
-    } catch {
-        Write-Host "Gagal menginstal rClient.Setup.latest.exe." -ForegroundColor Red
-        Write-Host "Error: $_" -ForegroundColor Red
-    }
+    Start-Process -FilePath $rClientInstaller -ArgumentList "/S" -Wait
+    Write-Host "rClient.Setup.latest.exe berhasil diinstal." -ForegroundColor Green
 
 } catch {
     Write-Host "Terjadi kesalahan: $_" -ForegroundColor Red
